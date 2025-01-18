@@ -126,10 +126,15 @@ jobs:
       - name: Commit files
         if: steps.verify-changed-files.outputs.files_changed == 'true'
         run: |
+          set -euo pipefail
           git add .
-          git commit -m "NPM check updates"
-          echo "sha1=$(git rev-parse HEAD)" >> $GITHUB_ENV
-          git push origin ${{ github.event.inputs.branch }}
+          git commit -m "[NPM] Update dependencies" || true
+          sha1="$(git rev-parse HEAD)"
+          echo "sha1=${sha1}" >> "$GITHUB_ENV"
+          git push origin "${{ github.event.inputs.branch }}" || {
+            echo "::error::Failed to push changes"
+            exit 1
+          }
 
       - name: Update PR with comment
         uses: mshick/add-pr-comment@v2
