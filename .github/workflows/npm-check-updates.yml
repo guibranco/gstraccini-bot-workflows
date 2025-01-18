@@ -67,8 +67,8 @@ jobs:
         with:
          path: ncu.log
 
-      - name: Delete csharpier.log
-        run: rm ncu.log 2> /dev/null
+      - name: Delete ncu.log
+        run: rm -f ncu.log
      
       - name: Update PR with comment
         uses: mshick/add-pr-comment@v2
