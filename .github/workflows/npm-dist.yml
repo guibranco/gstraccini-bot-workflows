@@ -10,7 +10,7 @@ on:
       repository:
         description: "The repository to run"
         required: true
-        default: "gstraccini-bot"
+        default: "gstraccini-bot-workflows"
       branch:
         description: "The branch to run"
         required: true
@@ -30,9 +30,6 @@ jobs:
   prettier:
     permissions: write-all
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [20.x]
     steps:
       - name: Generate a token
         id: generate_token
@@ -53,7 +50,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4.1.0
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 22.x
           cache: npm
       
       - name: Install & Test
