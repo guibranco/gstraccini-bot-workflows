@@ -1,4 +1,4 @@
-name: NPM Update
+name: NPM Check Updates
 
 on:
   workflow_dispatch:
