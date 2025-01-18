@@ -56,10 +56,22 @@ jobs:
         run: npm install -g npm-check-updates
 
       - name: Run NCU -u
-        run: ncu -u >> ncu.log
+        run: |
+          if ! ncu -u >> ncu.log 2>&1; then
+            echo "::error::Failed to run ncu -u"
+            exit 1
+          fi
 
       - name: Run npm update & install
-        run: npm update && npm install
+        run: |
+          if ! npm update >> ncu.log 2>&1; then
+            echo "::error::Failed to run npm update"
+            exit 1
+          fi
+          if ! npm install >> ncu.log 2>&1; then
+            echo "::error::Failed to run npm install"
+            exit 1
+          fi
 
       - name: Read ncu.log
         uses: guibranco/github-file-reader-action-v2@v2.2.728
