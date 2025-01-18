@@ -10,7 +10,7 @@ on:
       repository:
         description: "The repository to run"
         required: true
-        default: "gstraccini-bot"
+        default: "gstraccini-bot-workflows"
       branch:
         description: "The branch to run"
         required: true
@@ -48,7 +48,7 @@ jobs:
           installation_retrieval_mode: id
           installation_retrieval_payload: ${{ github.event.inputs.installationId }}
 
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           repository: "${{ github.event.inputs.owner}}/${{ github.event.inputs.repository }}"
