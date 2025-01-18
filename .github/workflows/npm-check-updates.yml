@@ -10,7 +10,7 @@ on:
       repository:
         description: "The repository to run"
         required: true
-        default: "gstraccini-bot"
+        default: "gstraccini-bot-workflows"
       branch:
         description: "The branch to run"
         required: true
