@@ -29,6 +29,9 @@ env:
 jobs:
   check-updates:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Generate a token
         id: generate_token
