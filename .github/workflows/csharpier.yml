@@ -30,7 +30,6 @@ jobs:
 
   csharpier:
     runs-on: ubuntu-latest
-    runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
