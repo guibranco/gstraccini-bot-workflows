@@ -58,7 +58,7 @@ jobs:
       - name: Install & Test
         run: npm install
 
-      - name: Run NPM package
+      - name: Run NPM run lint fix
         run: npm run lint -- --fix
      
       - name: Update PR with comment
