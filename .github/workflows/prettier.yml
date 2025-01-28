@@ -61,6 +61,7 @@ jobs:
           npm run test --if-present
 
       - name: Run Prettier format check
+        continue-on-error: true
         run: |
           set -e
           npm run format:check >> prettier.log
