@@ -23,6 +23,11 @@ on:
         description: "The installation id"
         required: true
         default: "-1"
+
+permissions:
+  contents: read
+  pull-requests: write
+
 env:
   GHA_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
@@ -55,16 +60,14 @@ jobs:
           node-version: 22.x
           cache: npm
 
-      - name: Install & Test
-        run: |
-          npm ci
-          npm run test --if-present
+      - name: Install Prettier
+        run: npm install prettier
 
       - name: Run Prettier format check
         continue-on-error: true
         run: |
           set -e
-          npm run format:check >> prettier.log
+          npx prettier --check . >> prettier.log
 
       - name: Read prettier.log
         uses: guibranco/github-file-reader-action-v2@latest
@@ -106,9 +109,7 @@ jobs:
             :warning: [Prettier](${{ env.GHA_URL }}) executed! There's no need for any changes.
 
       - name: Prettier format
-        run: |
-          npm run format --if-present
-          npm run format:write --if-present
+        run: npx prettier --write .
 
       - name: Verify Changed files
         uses: tj-actions/verify-changed-files@v20
