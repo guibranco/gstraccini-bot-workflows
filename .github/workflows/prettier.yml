@@ -54,7 +54,7 @@ jobs:
         with:
           node-version: 22.x
           cache: npm
-      
+
       - name: Install & Test
         run: |
           npm ci
@@ -70,10 +70,10 @@ jobs:
         uses: guibranco/github-file-reader-action-v2@latest
         id: log
         with:
-         path: prettier.log
+          path: prettier.log
 
       - name: Delete prettier.log
-        run: rm prettier.log 2> /dev/null         
+        run: rm prettier.log 2> /dev/null
 
       - name: Update PR with comment
         uses: mshick/add-pr-comment@v2
@@ -87,7 +87,7 @@ jobs:
           allow-repeats: true
           message: |
             :white_check_mark: [Prettier](${{ env.GHA_URL }}) result:
-            
+
             ```
             ${{ steps.log.outputs.contents }}
             ```
@@ -103,7 +103,7 @@ jobs:
           refresh-message-position: true
           allow-repeats: true
           message: |
-           :warning: [Prettier](${{ env.GHA_URL }}) executed! There's no need for any changes.
+            :warning: [Prettier](${{ env.GHA_URL }}) executed! There's no need for any changes.
 
       - name: Prettier format
         run: |
@@ -120,7 +120,7 @@ jobs:
           git config --local user.email "150967461+gstraccini[bot]@users.noreply.github.com"
           git config --local user.name "gstraccini[bot]"
           git config --global --add --bool push.autoSetupRemote true
-      
+
       - name: Commit files
         if: steps.verify-changed-files.outputs.files_changed == 'true'
         run: |
