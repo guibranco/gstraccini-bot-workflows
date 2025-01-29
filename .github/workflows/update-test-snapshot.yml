@@ -23,6 +23,11 @@ on:
         description: "The installation id"
         required: true
         default: "-1"
+
+permissions:
+  contents: read
+  pull-requests: write
+
 env:
   GHA_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
@@ -57,7 +62,7 @@ jobs:
 
       - name: Install
         run: npm ci
-          
+
       - name: Run update snapshot
         run: |
           set -e
@@ -67,10 +72,10 @@ jobs:
         uses: guibranco/github-file-reader-action-v2@latest
         id: log
         with:
-         path: update-snapshot.log
+          path: update-snapshot.log
 
       - name: Delete update-snapshot.log
-        run: rm update-snapshot.log 2> /dev/null         
+        run: rm update-snapshot.log 2> /dev/null
 
       - name: Update PR with comment
         uses: mshick/add-pr-comment@v2
@@ -84,7 +89,7 @@ jobs:
           allow-repeats: true
           message: |
             :white_check_mark: [Update test snapshots](${{ env.GHA_URL }}) result:
-            
+
             ```
             ${{ steps.log.outputs.contents }}
             ```
@@ -99,7 +104,7 @@ jobs:
           refresh-message-position: true
           allow-repeats: true
           message: |
-           :warning: [Update test snapshots](${{ env.GHA_URL }}) executed! There's no need for any changes.
+            :warning: [Update test snapshots](${{ env.GHA_URL }}) executed! There's no need for any changes.
 
       - name: Verify Changed files
         uses: tj-actions/verify-changed-files@v20

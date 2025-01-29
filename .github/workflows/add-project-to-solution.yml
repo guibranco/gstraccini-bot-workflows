@@ -27,11 +27,15 @@ on:
         description: "The project path to be added to solution"
         required: true
         default: "-1"
+
+permissions:
+  contents: read
+  pull-requests: write
+
 env:
   GHA_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
 jobs:
-
   add-project:
     runs-on: ubuntu-latest
     permissions:
@@ -62,7 +66,7 @@ jobs:
         run: dotnet sln add ${{ github.event.inputs.projectPath }}
 
       - name: Update PR with comment
-        uses: mshick/add-pr-comment@v2       
+        uses: mshick/add-pr-comment@v2
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
           repo-owner: ${{ github.event.inputs.owner }}
@@ -72,7 +76,7 @@ jobs:
           allow-repeats: true
           message: |
             :white_check_mark: [Add project to solution](${{ env.GHA_URL }}) result:
-            
+
             Project `${{ github.event.inputs.projectPath }}` added to the solution successfully!
 
       - name: Config git
@@ -80,11 +84,10 @@ jobs:
           git config --local user.email "150967461+gstraccini[bot]@users.noreply.github.com"
           git config --local user.name "gstraccini[bot]"
           git config --global --add --bool push.autoSetupRemote true
-      
+
       - name: Commit files
         run: |
           git add .
           git commit -m "Add project ${{ github.event.inputs.projectPath }} to solution"
           echo "sha1=$(git rev-parse HEAD)" >> $GITHUB_ENV
           git push origin ${{ github.event.inputs.branch }}
-    
