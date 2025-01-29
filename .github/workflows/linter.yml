@@ -38,6 +38,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_ALL_CODEBASE: true
           VALIDATE_JSCPD: false
-          VALIDATE_SHELFMT: false
+          VALIDATE_SHELL_SHFMT: false
           VALIDATE_NATURAL_LANGUAGE: false
           VALIDATE_GITHUB_ACTIONS: false
