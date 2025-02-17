@@ -82,7 +82,7 @@ jobs:
           fi
 
       - name: Read ncu.log
-        uses: guibranco/github-file-reader-action-v2@v2.2.741
+        uses: guibranco/github-file-reader-action-v2@v2.2.746
         id: log
         with:
           path: ncu.log
