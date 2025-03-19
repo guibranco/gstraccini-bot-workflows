@@ -75,11 +75,11 @@ jobs:
             exit 1
           fi
 
-      - name: Run NCU -u -f ${{ github.event.inputs.filter }}
+      - name: Run NCU -u -f "${{ github.event.inputs.filter }}"
         if: ${{ github.event.inputs.filter != -1 }}
         run: |
-          if ! ncu -u -f ${{ github.event.inputs.filter }} >> ncu.log 2>&1; then
-            echo "::error::Failed to run ncu -u -f ${{ github.event.inputs.filter }}"
+          if ! ncu -u -f "${{ github.event.inputs.filter }}" >> ncu.log 2>&1; then
+            echo "::error::Failed to run ncu -u -f \"${{ github.event.inputs.filter }}\""
             exit 1
           fi
 
