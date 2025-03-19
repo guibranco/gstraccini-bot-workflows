@@ -67,7 +67,7 @@ jobs:
       - name: Install npm-check-updates
         run: npm install -g npm-check-updates
 
-      - name: Run NCU -u without filter
+      - name: Run NCU -u
         if: ${{ github.event.inputs.filter == -1 }}
         run: |
           if ! ncu -u >> ncu.log 2>&1; then
@@ -75,11 +75,11 @@ jobs:
             exit 1
           fi
 
-      - name: Run NCU -u with filter
+      - name: Run NCU -u -f ${{ github.event.inputs.filter }}
         if: ${{ github.event.inputs.filter != -1 }}
         run: |
-          if ! ncu -u --filter ${{ github.event.inputs.filter }} >> ncu.log 2>&1; then
-            echo "::error::Failed to run ncu -u --filter ${{ github.event.inputs.filter }}"
+          if ! ncu -u -f ${{ github.event.inputs.filter }} >> ncu.log 2>&1; then
+            echo "::error::Failed to run ncu -u -f ${{ github.event.inputs.filter }}"
             exit 1
           fi
 
@@ -96,16 +96,18 @@ jobs:
 
       - name: Read ncu.log
         uses: guibranco/github-file-reader-action-v2@v2.2.762
+        if: always()
         id: log
         with:
           path: ncu.log
 
       - name: Delete ncu.log
+        if: always()
         run: rm -f ncu.log
 
-      - name: Update PR with comment
+      - name: Update PR with comment (success)
         uses: mshick/add-pr-comment@v2
-        if: ${{ steps.log.outputs.contents != '' }}
+        if: ${{ success() && steps.log.outputs.contents != '' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
           repo-owner: ${{ github.event.inputs.owner }}
@@ -120,9 +122,9 @@ jobs:
             ${{ steps.log.outputs.contents }}
             ```
 
-      - name: Update PR with comment
+      - name: Update PR with comment (no updates)
         uses: mshick/add-pr-comment@v2
-        if: ${{ steps.log.outputs.contents == '' }}
+        if: ${{ success() && steps.log.outputs.contents == '' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
           repo-owner: ${{ github.event.inputs.owner }}
@@ -132,6 +134,23 @@ jobs:
           allow-repeats: true
           message: |
             :warning: [NPM check updates](${{ env.GHA_URL }}) executed! There's no need for any changes.
+
+      - name: Update PR with comment (failure)
+        uses: mshick/add-pr-comment@v2
+        if: ${{ failure() && steps.log.outputs.contents != '' }}
+        with:
+          repo-token: ${{ steps.generate_token.outputs.token }}
+          repo-owner: ${{ github.event.inputs.owner }}
+          repo-name: ${{ github.event.inputs.repository }}
+          issue: ${{ github.event.inputs.pull_request }}
+          refresh-message-position: true
+          allow-repeats: true
+          message: |
+            :x: [NPM check updates](${{ env.GHA_URL }}) failed!
+
+            ```
+            ${{ steps.log.outputs.contents }}
+            ```
 
       - name: Verify Changed files
         uses: tj-actions/verify-changed-files@v20
