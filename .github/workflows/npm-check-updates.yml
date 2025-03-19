@@ -23,6 +23,10 @@ on:
         description: "The installation id"
         required: true
         default: "-1"
+      filter:
+        description: "The packages filter (NCU --filter)"
+        required: false
+        default: "-1"
 
 permissions:
   contents: read
@@ -63,10 +67,19 @@ jobs:
       - name: Install npm-check-updates
         run: npm install -g npm-check-updates
 
-      - name: Run NCU -u
+      - name: Run NCU -u without filter
+        if: ${{ github.event.inputs.filter == -1 }}
         run: |
           if ! ncu -u >> ncu.log 2>&1; then
             echo "::error::Failed to run ncu -u"
+            exit 1
+          fi
+
+      - name: Run NCU -u with filter
+        if: ${{ github.event.inputs.filter != -1 }}
+        run: |
+          if ! ncu -u --filter ${{ github.event.inputs.filter }} >> ncu.log 2>&1; then
+            echo "::error::Failed to run ncu -u --filter ${{ github.event.inputs.filter }}"
             exit 1
           fi
 
