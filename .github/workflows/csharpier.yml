@@ -57,21 +57,25 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
 
-      - name: Check if manifest file exists
+      - name: Check if CSharpier is installed
         run: |
-          echo "MANIFEST_EXISTS=false" >> $GITHUB_ENV
+          echo "CSharpierInstalled=false" >> $GITHUB_ENV
           if test -f ".config/dotnet-tools.json"; then
-            echo "MANIFEST_EXISTS=true" >> $GITHUB_ENV
+            if jq -e 'try .tools | has("csharpier") catch false' .config/dotnet-tools.json > /dev/null; then
+              echo "CSharpierInstalled=true" >> $GITHUB_ENV
+            fi
           fi
 
       - name: Install CSharpier if missing
-        if: ${{ env.MANIFEST_EXISTS == 'false' }}
+        if: ${{ env.CSharpierInstalled == 'false' }}
         run: |
-          dotnet new tool-manifest
+          if ! test -f ".config/dotnet-tools.json"; then
+            dotnet new tool-manifest
+          fi
           dotnet tool install csharpier
 
-      - name: Dotnet restore
-        if: ${{ env.MANIFEST_EXISTS == 'true' }}
+      - name: Dotnet restore and update
+        if: ${{ env.CSharpierInstalled == 'true' }}
         run: |
           dotnet tool restore
           dotnet tool update csharpier
@@ -80,7 +84,7 @@ jobs:
         continue-on-error: true
         run: |
           set -e
-          dotnet csharpier . --check 2>&1 > /dev/null >> csharpier.log
+          dotnet csharpier check . >> csharpier.log 2>&1
 
       - name: Read csharpier.log
         uses: guibranco/github-file-reader-action-v2@v2.2.788
@@ -91,7 +95,7 @@ jobs:
       - name: Delete csharpier.log
         run: rm csharpier.log 2> /dev/null
 
-      - name: Update PR with comment
+      - name: Update PR with comment (issues found)
         uses: mshick/add-pr-comment@v2
         if: ${{ steps.log.outputs.contents != '' }}
         with:
@@ -108,7 +112,7 @@ jobs:
             ${{ steps.log.outputs.contents }}
             ```
 
-      - name: Update PR with comment
+      - name: Update PR with comment (no issues)
         uses: mshick/add-pr-comment@v2
         if: ${{ steps.log.outputs.contents == '' }}
         with:
@@ -122,7 +126,7 @@ jobs:
             :warning: [CSharpier](${{ env.GHA_URL }}) executed! There's no need for any changes.
 
       - name: CSharpier format
-        run: dotnet csharpier .
+        run: dotnet csharpier format .
 
       - name: Verify Changed files
         uses: tj-actions/verify-changed-files@v20
@@ -143,9 +147,9 @@ jobs:
           echo "sha1=$(git rev-parse HEAD)" >> $GITHUB_ENV
           git push origin ${{ github.event.inputs.branch }}
 
-      - name: Update PR with comment
+      - name: Update PR with comment (failed)
         uses: mshick/add-pr-comment@v2
-        if: failure()
+        if: ${{ failure() }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
           repo-owner: ${{ github.event.inputs.owner }}
