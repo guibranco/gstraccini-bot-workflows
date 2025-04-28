@@ -61,7 +61,7 @@ jobs:
         run: |
           echo "CSharpierInstalled=false" >> $GITHUB_ENV
           if test -f ".config/dotnet-tools.json"; then
-            if jq -e '.tools | has("csharpier")' .config/dotnet-tools.json > /dev/null; then
+            if jq -e 'try .tools | has("csharpier") catch false' .config/dotnet-tools.json > /dev/null; then
               echo "CSharpierInstalled=true" >> $GITHUB_ENV
             fi
           fi
@@ -84,7 +84,7 @@ jobs:
         continue-on-error: true
         run: |
           set -e
-          dotnet csharpier check . 2>&1 > /dev/null >> csharpier.log
+          dotnet csharpier check . >> csharpier.log 2>&1
 
       - name: Read csharpier.log
         uses: guibranco/github-file-reader-action-v2@v2.2.788
