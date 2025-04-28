@@ -149,7 +149,8 @@ jobs:
 
       - name: Update PR with comment (failed)
         uses: mshick/add-pr-comment@v2
-        if: failure()
+-        if: failure()
++        if: ${{ failure() }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
           repo-owner: ${{ github.event.inputs.owner }}
