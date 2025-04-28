@@ -59,12 +59,12 @@ jobs:
 
       - name: Check if CSharpier is installed
         run: |
-         echo "CSharpierInstalled=false" >> $GITHUB_ENV
-         if test -f ".config/dotnet-tools.json"; then
-           if jq -e '.tools | has("csharpier")' .config/dotnet-tools.json > /dev/null; then
-             echo "CSharpierInstalled=true" >> $GITHUB_ENV
-           fi
-         fi
+          echo "CSharpierInstalled=false" >> $GITHUB_ENV
+          if test -f ".config/dotnet-tools.json"; then
+            if jq -e '.tools | has("csharpier")' .config/dotnet-tools.json > /dev/null; then
+              echo "CSharpierInstalled=true" >> $GITHUB_ENV
+            fi
+          fi
 
       - name: Install CSharpier if missing
         if: ${{ env.CSharpierInstalled == 'false' }}
