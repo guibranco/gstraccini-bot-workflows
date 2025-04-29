@@ -81,7 +81,7 @@ jobs:
           allow-repeats: true
           message: |
             :white_check_mark: [NPM Dist](${{ env.GHA_URL }}) executed successfully!
-      
+
       - name: Verify Changed files
         uses: tj-actions/verify-changed-files@v20
         id: verify-changed-files
@@ -99,7 +99,7 @@ jobs:
           git add .
           git commit -m "Generate dist files"
           echo "sha1=$(git rev-parse HEAD)" >> $GITHUB_ENV
-          git push origin ${{ github.event.inputs.branch }}      
+          git push origin ${{ github.event.inputs.branch }}
 
       - name: Mark check run as success
         if: success()
