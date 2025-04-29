@@ -6,27 +6,26 @@ on:
       owner:
         description: "The owner of the repository to run"
         required: true
-        default: "guibranco"
       repository:
         description: "The repository to run"
         required: true
-        default: "gstraccini-bot-workflows"
       branch:
         description: "The branch to run"
         required: true
-        default: "main"
       pull_request:
         description: "The pull request number"
         required: true
-        default: "-1"
       installationId:
         description: "The installation id"
         required: true
-        default: "-1"
+      check_run_id:
+        description: "The check run id"
+        required: true
 
 permissions:
   contents: read
   pull-requests: write
+  checks: write
 
 env:
   GHA_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
@@ -34,9 +33,6 @@ env:
 jobs:
   csharpier:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
       - name: Generate a token
         id: generate_token
@@ -46,6 +42,14 @@ jobs:
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
           installation_retrieval_mode: id
           installation_retrieval_payload: ${{ github.event.inputs.installationId }}
+
+      - name: Mark check run as in_progress
+        uses: LouisBrunner/checks-action@v2.0.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          check_id: ${{ github.event.inputs.check_run_id }}
+          status: in_progress
+          details_url: ${{ env.GHA_URL }}
 
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -145,7 +149,18 @@ jobs:
           git add .
           git commit -m "CSharpier format"
           echo "sha1=$(git rev-parse HEAD)" >> $GITHUB_ENV
-          git push origin ${{ github.event.inputs.branch }}
+          git push origin ${{ github.event.inputs.branch }}      
+
+      - name: Mark check run as success
+        if: success()
+        uses: LouisBrunner/checks-action@v2.0.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          check_id: ${{ github.event.inputs.check_run_id }}
+          conclusion: success
+          details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Workflow passed ✅", "summary": "See details in the workflow run."}
 
       - name: Update PR with comment (failed)
         uses: mshick/add-pr-comment@v2
@@ -159,3 +174,14 @@ jobs:
           allow-repeats: true
           message: |
             :x: [CSharpier](${{ env.GHA_URL }}) failed!
+
+      - name: Mark check run as failure
+        if: failure()
+        uses: LouisBrunner/checks-action@v2.0.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          check_id: ${{ github.event.inputs.check_run_id }}
+          conclusion: failure
+          details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Workflow failed ❌", "summary": "See details in the workflow run."}
