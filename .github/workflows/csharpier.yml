@@ -156,7 +156,7 @@ jobs:
         uses: LouisBrunner/checks-action@v2.0.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
-          check_id: ${{ github.event.inputs.check_run_id }}
+          check_id: ${{ github.event.inputs.checkRunId }}
           conclusion: success
           details_url: ${{ env.GHA_URL }}
           output: |
@@ -180,7 +180,7 @@ jobs:
         uses: LouisBrunner/checks-action@v2.0.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
-          check_id: ${{ github.event.inputs.check_run_id }}
+          check_id: ${{ github.event.inputs.checkRunId }}
           conclusion: failure
           details_url: ${{ env.GHA_URL }}
           output: |
