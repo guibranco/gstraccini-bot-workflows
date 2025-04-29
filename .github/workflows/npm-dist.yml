@@ -69,6 +69,19 @@ jobs:
       - name: Run NPM package
         run: npm run package
 
+      - name: Update PR with comment (success)
+        if: success()
+        uses: mshick/add-pr-comment@v2
+        with:
+          repo-token: ${{ steps.generate_token.outputs.token }}
+          repo-owner: ${{ github.event.inputs.owner }}
+          repo-name: ${{ github.event.inputs.repository }}
+          issue: ${{ github.event.inputs.pull_request }}
+          refresh-message-position: true
+          allow-repeats: true
+          message: |
+            :white_check_mark: [NPM Dist](${{ env.GHA_URL }}) executed successfully!
+      
       - name: Verify Changed files
         uses: tj-actions/verify-changed-files@v20
         id: verify-changed-files
@@ -86,20 +99,7 @@ jobs:
           git add .
           git commit -m "Generate dist files"
           echo "sha1=$(git rev-parse HEAD)" >> $GITHUB_ENV
-          git push origin ${{ github.event.inputs.branch }}
-
-      - name: Update PR with comment (success)
-        if: success()
-        uses: mshick/add-pr-comment@v2
-        with:
-          repo-token: ${{ steps.generate_token.outputs.token }}
-          repo-owner: ${{ github.event.inputs.owner }}
-          repo-name: ${{ github.event.inputs.repository }}
-          issue: ${{ github.event.inputs.pull_request }}
-          refresh-message-position: true
-          allow-repeats: true
-          message: |
-            :white_check_mark: [NPM Dist](${{ env.GHA_URL }}) executed successfully!
+          git push origin ${{ github.event.inputs.branch }}      
 
       - name: Mark check run as success
         if: success()
