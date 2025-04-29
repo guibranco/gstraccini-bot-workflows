@@ -18,7 +18,7 @@ on:
       installationId:
         description: "The installation id"
         required: true
-      check_run_id:
+      checkRunId:
         description: "The check run id"
         required: true
 
