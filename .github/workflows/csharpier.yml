@@ -47,7 +47,7 @@ jobs:
         uses: LouisBrunner/checks-action@v2.0.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
-          check_id: ${{ github.event.inputs.check_run_id }}
+          check_id: ${{ github.event.inputs.checkRunId }}
           status: in_progress
           details_url: ${{ env.GHA_URL }}
 
