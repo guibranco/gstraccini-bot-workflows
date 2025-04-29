@@ -149,7 +149,7 @@ jobs:
           git add .
           git commit -m "CSharpier format"
           echo "sha1=$(git rev-parse HEAD)" >> $GITHUB_ENV
-          git push origin ${{ github.event.inputs.branch }}      
+          git push origin ${{ github.event.inputs.branch }}
 
       - name: Mark check run as success
         if: success()
