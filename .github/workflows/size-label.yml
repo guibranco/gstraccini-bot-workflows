@@ -3,14 +3,16 @@ name: Label based on PR size
 on:
   pull_request:
   workflow_dispatch:
-  
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
 jobs:
   size-label:
     runs-on: ubuntu-latest
-    permissions:
-      issues: write
     steps:
-
       - name: size-label
         uses: "pascalgn/size-label-action@v0.5.5"
         env:
