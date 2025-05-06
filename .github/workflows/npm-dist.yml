@@ -47,6 +47,7 @@ jobs:
         uses: LouisBrunner/checks-action@v2.0.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
           check_id: ${{ github.event.inputs.checkRunId }}
           status: in_progress
           details_url: ${{ env.GHA_URL }}
@@ -106,6 +107,7 @@ jobs:
         uses: LouisBrunner/checks-action@v2.0.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
           check_id: ${{ github.event.inputs.checkRunId }}
           conclusion: success
           details_url: ${{ env.GHA_URL }}
@@ -130,6 +132,7 @@ jobs:
         uses: LouisBrunner/checks-action@v2.0.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
           check_id: ${{ github.event.inputs.checkRunId }}
           conclusion: failure
           details_url: ${{ env.GHA_URL }}
