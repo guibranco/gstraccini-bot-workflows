@@ -6,23 +6,21 @@ on:
       owner:
         description: "The owner of the repository to run"
         required: true
-        default: "guibranco"
       repository:
         description: "The repository to run"
         required: true
-        default: "gstraccini-bot-workflows"
       branch:
         description: "The branch to run"
         required: true
-        default: "main"
       pull_request:
         description: "The pull request number"
         required: true
-        default: "-1"
       installationId:
         description: "The installation id"
         required: true
-        default: "-1"
+      checkRunId:
+        description: "The check run id"
+        required: true
       filter:
         description: "The packages filter (NCU --filter)"
         required: false
@@ -31,6 +29,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  checks: write
 
 env:
   GHA_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
@@ -50,6 +49,15 @@ jobs:
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
           installation_retrieval_mode: id
           installation_retrieval_payload: ${{ github.event.inputs.installationId }}
+
+      - name: Mark check run as in_progress
+        uses: LouisBrunner/checks-action@v2.0.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
+          status: in_progress
+          details_url: ${{ env.GHA_URL }}
 
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -121,6 +129,17 @@ jobs:
             ```
             ${{ steps.log.outputs.contents }}
             ```
+      - name: Mark check run as success
+        if: success()
+        uses: LouisBrunner/checks-action@v2.0.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
+          conclusion: success
+          details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Workflow passed ✅", "summary": "See details in the workflow run."}
 
       - name: Update PR with comment (no updates)
         uses: mshick/add-pr-comment@v2
@@ -176,9 +195,9 @@ jobs:
             exit 1
           }
 
-      - name: Update PR with comment
+      - name: Update PR with comment (failed)
         uses: mshick/add-pr-comment@v2
-        if: failure()
+        if: ${{ failure() }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
           repo-owner: ${{ github.event.inputs.owner }}
@@ -188,3 +207,15 @@ jobs:
           allow-repeats: true
           message: |
             :x: [NPM check updates](${{ env.GHA_URL }}) failed!
+
+      - name: Mark check run as failure
+        if: failure()
+        uses: LouisBrunner/checks-action@v2.0.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
+          conclusion: failure
+          details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Workflow failed ❌", "summary": "See details in the workflow run."}
