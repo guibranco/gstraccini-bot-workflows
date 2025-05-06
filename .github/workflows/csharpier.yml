@@ -79,6 +79,17 @@ jobs:
           fi
           dotnet tool install csharpier
 
+      - name: Fix legacy dotnet-csharpier reference
+        if: ${{ env.CSharpierInstalled == 'true' }}
+        run: |
+          echo "Checking for legacy 'dotnet-csharpier' command..."
+          if grep -q '"dotnet-csharpier"' .config/dotnet-tools.json; then
+            echo "Found legacy command. Replacing with 'csharpier'..."
+            sed -i 's/"dotnet-csharpier"/"csharpier"/g' .config/dotnet-tools.json
+          else
+            echo "No legacy command found."
+          fi
+
       - name: Dotnet restore and update
         if: ${{ env.CSharpierInstalled == 'true' }}
         run: |
