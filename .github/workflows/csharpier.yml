@@ -47,7 +47,8 @@ jobs:
         uses: LouisBrunner/checks-action@v2.0.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
-          check_id: ${{ github.event.inputs.check_run_id }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
           status: in_progress
           details_url: ${{ env.GHA_URL }}
 
@@ -91,7 +92,7 @@ jobs:
           dotnet csharpier check . >> csharpier.log 2>&1
 
       - name: Read csharpier.log
-        uses: guibranco/github-file-reader-action-v2@v2.2.792
+        uses: guibranco/github-file-reader-action-v2@v2.2.796
         id: log
         with:
           path: csharpier.log
@@ -156,6 +157,7 @@ jobs:
         uses: LouisBrunner/checks-action@v2.0.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
           check_id: ${{ github.event.inputs.checkRunId }}
           conclusion: success
           details_url: ${{ env.GHA_URL }}
@@ -180,6 +182,7 @@ jobs:
         uses: LouisBrunner/checks-action@v2.0.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
           check_id: ${{ github.event.inputs.checkRunId }}
           conclusion: failure
           details_url: ${{ env.GHA_URL }}
