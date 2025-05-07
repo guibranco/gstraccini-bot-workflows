@@ -4,22 +4,22 @@ on:
   workflow_dispatch:
     inputs:
       owner:
-        description: "The owner of the repository to run"
+        description: "The owner of the repository"
         required: true
       repository:
-        description: "The repository to run"
+        description: "The repository name"
         required: true
       branch:
-        description: "The branch to run"
+        description: "The branch to revert on"
         required: true
       pull_request:
-        description: "The pull request number"
+        description: "PR number (for comment feedback)"
         required: true
       installationId:
-        description: "The installation id"
+        description: "GitHub App installation ID"
         required: true
       checkRunId:
-        description: "The check run id"
+        description: "Check run ID"
         required: true
 
 permissions:
