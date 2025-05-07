@@ -51,6 +51,8 @@ jobs:
           check_id: ${{ github.event.inputs.checkRunId }}
           status: in_progress
           details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Workflow started 🏃🏻‍➡️", "summary": "See details in the workflow run."}
 
       - name: Checkout repo
         uses: actions/checkout@v4
