@@ -10,7 +10,7 @@ on:
         description: "The repository name"
         required: true
       branch:
-        description: "The branch to revert on"
+        description: "The branch to format and push changes to"
         required: true
       pull_request:
         description: "PR number (for comment feedback)"
