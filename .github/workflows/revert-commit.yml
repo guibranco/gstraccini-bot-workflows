@@ -71,6 +71,7 @@ jobs:
 
       - name: Revert the commit
         run: |
+          set -eo pipefail
           git revert --no-edit ${{ github.event.inputs.sha1 }}
           git push origin ${{ github.event.inputs.branch }}
 
