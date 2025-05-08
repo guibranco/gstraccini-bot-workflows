@@ -5,7 +5,7 @@
 [![Deploy via ftp](https://github.com/guibranco/gstraccini-bot-service/actions/workflows/deploy.yml/badge.svg)](https://github.com/guibranco/gstraccini-bot-service/actions/workflows/deploy.yml)
 [![PHP Linting](https://github.com/guibranco/gstraccini-bot-service/actions/workflows/php-lint.yml/badge.svg)](https://github.com/guibranco/gstraccini-bot-service/actions/workflows/php-lint.yml)
 [![JSON/YAML validation](https://github.com/guibranco/gstraccini-bot-service/actions/workflows/json-yaml-lint.yml/badge.svg)](https://github.com/guibranco/gstraccini-bot-service/actions/workflows/json-yaml-lint.yml)
-[![Shell checker](https://github.com/guibranco/gstraccini-bot-service/actions/workflows/shell-cheker.yml/badge.svg)](https://github.com/guibranco/gstraccini-bot-service/actions/workflows/shell-cheker.yml)
+[![Shell checker](https://github.com/guibranco/gstraccini-bot-service/actions/workflows/shell-checker.yml/badge.svg)](https://github.com/guibranco/gstraccini-bot-service/actions/workflows/shell-checker.yml)
 
 ---
 
@@ -17,7 +17,7 @@
 
 ## About This Repository
 
-This repository contains the GitHub Actions (workflows) definitions.
+This repository contains the definitions of GitHub Actions (workflows) for [GStraccini-bot](https://github.com/apps/gstraccini).
 
 ---
 
