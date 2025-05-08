@@ -17,7 +17,7 @@
 
 ## About This Repository
 
-This repository contains the GitHub Actions definitions.
+This repository contains the GitHub Actions (workflows) definitions.
 
 ---
 
