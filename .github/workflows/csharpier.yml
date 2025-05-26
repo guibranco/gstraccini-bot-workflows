@@ -105,7 +105,7 @@ jobs:
           dotnet csharpier check . >> csharpier.log 2>&1
 
       - name: Read csharpier.log
-        uses: guibranco/github-file-reader-action-v2@v2.2.807
+        uses: guibranco/github-file-reader-action-v2@v2.2.808
         id: log
         with:
           path: csharpier.log
