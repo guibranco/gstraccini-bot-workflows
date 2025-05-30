@@ -1,0 +1,152 @@
+name: Dotnet Migrate SLNX
+
+on:
+  workflow_dispatch:
+    inputs:
+      owner:
+        description: "The owner of the repository"
+        required: true
+      repository:
+        description: "The repository name"
+        required: true
+      branch:
+        description: "The branch to push changes to"
+        required: true
+      pull_request:
+        description: "PR number (for comment feedback)"
+        required: true
+      installationId:
+        description: "GitHub App installation ID"
+        required: true
+      checkRunId:
+        description: "Check run ID"
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+env:
+  GHA_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+jobs:
+  migrate-slnx:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate a token
+        id: generate_token
+        uses: tibdex/github-app-token@v2.1.0
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          installation_retrieval_mode: id
+          installation_retrieval_payload: ${{ github.event.inputs.installationId }}
+
+      - name: Mark check run as in_progress
+        uses: LouisBrunner/checks-action@v2.0.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
+          status: in_progress
+          details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Migrate started 🛠️", "summary": "Checking and migrating .sln file."}
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          repository: "${{ github.event.inputs.owner}}/${{ github.event.inputs.repository }}"
+          ref: ${{ github.event.inputs.branch }}
+          token: ${{ steps.generate_token.outputs.token }}
+
+      - name: Setup .NET 9.0.200
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.200'
+
+      - name: Check for .sln file in root
+        id: check_sln
+        run: |
+          if [ -f *.sln ]; then
+            echo "Found .sln file"
+          else
+            echo "❌ No .sln file found in repository root!"
+            exit 1
+          fi
+
+      - name: Migrate .sln file
+        run: dotnet sln migrate
+
+      - name: Delete legacy .sln file
+        run: |
+          SLN_FILE=$(ls *.sln | grep -v '\.slnx$' || true)
+          if [ -n "$SLN_FILE" ]; then
+            echo "Deleting old solution file: $SLN_FILE"
+            git rm "$SLN_FILE"
+          fi
+
+      - name: Configure git
+        run: |
+          git config --local user.email "150967461+gstraccini[bot]@users.noreply.github.com"
+          git config --local user.name "gstraccini[bot]"
+          git config --global --add --bool push.autoSetupRemote true
+
+      - name: Commit migrated solution file
+        run: |
+          git add .
+          git commit -m "Migrate .sln to new format via dotnet sln migrate"
+          git push origin ${{ github.event.inputs.branch }}
+
+      - name: Mark check run as success
+        if: success()
+        uses: LouisBrunner/checks-action@v2.0.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
+          conclusion: success
+          details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Migration successful ✅", "summary": "The solution file was migrated and committed."}
+
+      - name: Update PR with comment (success)
+        uses: mshick/add-pr-comment@v2
+        if: success()
+        with:
+          repo-token: ${{ steps.generate_token.outputs.token }}
+          repo-owner: ${{ github.event.inputs.owner }}
+          repo-name: ${{ github.event.inputs.repository }}
+          issue: ${{ github.event.inputs.pull_request }}
+          refresh-message-position: true
+          allow-repeats: true
+          message: |
+            :rocket: [SLN Migration](${{ env.GHA_URL }}) completed!  
+            The solution file has been successfully migrated and pushed to `${{ github.event.inputs.branch }}`.
+
+      - name: Mark check run as failure
+        if: failure()
+        uses: LouisBrunner/checks-action@v2.0.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
+          conclusion: failure
+          details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Migration failed ❌", "summary": "Check the logs for errors during .sln migration."}
+
+      - name: Update PR with comment (failed)
+        uses: mshick/add-pr-comment@v2
+        if: failure()
+        with:
+          repo-token: ${{ steps.generate_token.outputs.token }}
+          repo-owner: ${{ github.event.inputs.owner }}
+          repo-name: ${{ github.event.inputs.repository }}
+          issue: ${{ github.event.inputs.pull_request }}
+          refresh-message-position: true
+          allow-repeats: true
+          message: |
+            :x: [SLN Migration](${{ env.GHA_URL }}) failed.  
+            Check the workflow run logs for more information.
