@@ -64,7 +64,7 @@ jobs:
       - name: Setup .NET 9.0.200
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9'
+          dotnet-version: "9"
 
       - name: Check for .sln file in root
         id: check_sln
