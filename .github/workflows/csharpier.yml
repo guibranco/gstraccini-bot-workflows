@@ -91,13 +91,13 @@ jobs:
           WORKFLOW_FILE=".github/workflows/${{ github.event.inputs.target_workflow_file }}"
           REQUIRED_ACTION="${{ github.event.inputs.required_action }}"
           MIN_VERSION="${{ github.event.inputs.min_version }}"
-          
+
           echo "Checking for workflow file: $WORKFLOW_FILE"
           echo "Required action: $REQUIRED_ACTION"
           echo "Minimum version: $MIN_VERSION"
-          
+
           SKIP_TEMPLATE="false"
-          
+
           if [ -f "$WORKFLOW_FILE" ]; then
             echo "Workflow file exists, checking action version..."
             
@@ -129,7 +129,7 @@ jobs:
           else
             echo "Workflow file $WORKFLOW_FILE does not exist"
           fi
-          
+
           echo "skip_template=$SKIP_TEMPLATE" >> $GITHUB_OUTPUT
           echo "SKIP_TEMPLATE=$SKIP_TEMPLATE" >> $GITHUB_ENV
 
@@ -139,12 +139,12 @@ jobs:
           cd target-repo
           TEMPLATE_PATH="../pivot-repo/${{ github.event.inputs.template_file }}"
           TARGET_PATH=".github/workflows/${{ github.event.inputs.target_workflow_file }}"
-          
+
           echo "Copying template from $TEMPLATE_PATH to $TARGET_PATH"
-          
+
           # Create .github/workflows directory if it doesn't exist
           mkdir -p .github/workflows
-          
+
           if [ -f "$TEMPLATE_PATH" ]; then
             cp "$TEMPLATE_PATH" "$TARGET_PATH"
             echo "Template file copied successfully"
@@ -254,7 +254,7 @@ jobs:
           allow-repeats: true
           message: |
             :information_source: [Workflow Template](${{ env.GHA_URL }}) updated!
-            
+
             A new workflow template has been added: `.github/workflows/${{ github.event.inputs.target_workflow_file }}`
 
       - name: CSharpier format
