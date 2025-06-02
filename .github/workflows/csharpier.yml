@@ -154,8 +154,6 @@ jobs:
           fi
 
       - name: Setup .NET
-        run: |
-          cd target-repo
         uses: actions/setup-dotnet@v4
 
       - name: Check if CSharpier is installed
