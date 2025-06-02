@@ -156,7 +156,9 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 9.0.300
+          dotnet-version: |
+            8.0.401
+            9.0.300
 
       - name: Check if CSharpier is installed
         run: |
