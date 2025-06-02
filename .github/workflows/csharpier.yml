@@ -21,6 +21,22 @@ on:
       checkRunId:
         description: "Check run ID"
         required: true
+      target_workflow_file:
+        description: "Name of the workflow file to check for (e.g., 'ci.yml')"
+        required: false
+        default: "linter.yml"
+      required_action:
+        description: "Action to check for (e.g., 'actions/checkout')"
+        required: false
+        default: "guibranco/github-csharpier-linter-action"
+      min_version:
+        description: "Minimum required version (e.g., 'v4')"
+        required: false
+        default: "v1.0.5"
+      template_file:
+        description: "Path to template file in pivot repository"
+        required: false
+        default: "templates/workflows/csharpier-linter.yml"
 
 permissions:
   contents: read
@@ -54,18 +70,97 @@ jobs:
           output: |
             {"title": "Workflow started 🏃🏻‍➡️", "summary": "See details in the workflow run."}
 
-      - name: Checkout repo
+      - name: Checkout pivot repository (for template)
+        uses: actions/checkout@v4
+        with:
+          path: pivot-repo
+          token: ${{ steps.generate_token.outputs.token }}
+
+      - name: Checkout target repo
         uses: actions/checkout@v4
         with:
           repository: "${{ github.event.inputs.owner}}/${{ github.event.inputs.repository }}"
           ref: ${{ github.event.inputs.branch }}
           token: ${{ steps.generate_token.outputs.token }}
+          path: target-repo
+
+      - name: Check workflow file and action version
+        id: check_workflow
+        run: |
+          cd target-repo
+          WORKFLOW_FILE=".github/workflows/${{ github.event.inputs.target_workflow_file }}"
+          REQUIRED_ACTION="${{ github.event.inputs.required_action }}"
+          MIN_VERSION="${{ github.event.inputs.min_version }}"
+
+          echo "Checking for workflow file: $WORKFLOW_FILE"
+          echo "Required action: $REQUIRED_ACTION"
+          echo "Minimum version: $MIN_VERSION"
+
+          SKIP_TEMPLATE="false"
+
+          if [ -f "$WORKFLOW_FILE" ]; then
+            echo "Workflow file exists, checking action version..."
+            
+            # Extract version numbers for comparison
+            extract_version() {
+              echo "$1" | sed 's/^v//' | sed 's/\..*//'
+            }
+            
+            # Check if the required action exists and get its version
+            ACTION_LINE=$(grep -E "uses:.*$REQUIRED_ACTION@" "$WORKFLOW_FILE" | head -1 || echo "")
+            
+            if [ -n "$ACTION_LINE" ]; then
+              CURRENT_VERSION=$(echo "$ACTION_LINE" | sed -n "s/.*$REQUIRED_ACTION@\([^[:space:]]*\).*/\1/p")
+              echo "Found action version: $CURRENT_VERSION"
+              
+              # Simple version comparison (assumes semantic versioning)
+              CURRENT_NUM=$(extract_version "$CURRENT_VERSION")
+              MIN_NUM=$(extract_version "$MIN_VERSION")
+              
+              if [ "$CURRENT_NUM" -ge "$MIN_NUM" ]; then
+                echo "Action version $CURRENT_VERSION meets minimum requirement $MIN_VERSION"
+                SKIP_TEMPLATE="true"
+              else
+                echo "Action version $CURRENT_VERSION is below minimum requirement $MIN_VERSION"
+              fi
+            else
+              echo "Required action $REQUIRED_ACTION not found in workflow file"
+            fi
+          else
+            echo "Workflow file $WORKFLOW_FILE does not exist"
+          fi
+
+          echo "skip_template=$SKIP_TEMPLATE" >> $GITHUB_OUTPUT
+          echo "SKIP_TEMPLATE=$SKIP_TEMPLATE" >> $GITHUB_ENV
+
+      - name: Copy template workflow file
+        if: ${{ env.SKIP_TEMPLATE == 'false' }}
+        run: |
+          cd target-repo
+          TEMPLATE_PATH="../pivot-repo/${{ github.event.inputs.template_file }}"
+          TARGET_PATH=".github/workflows/${{ github.event.inputs.target_workflow_file }}"
+
+          echo "Copying template from $TEMPLATE_PATH to $TARGET_PATH"
+
+          # Create .github/workflows directory if it doesn't exist
+          mkdir -p .github/workflows
+
+          if [ -f "$TEMPLATE_PATH" ]; then
+            cp "$TEMPLATE_PATH" "$TARGET_PATH"
+            echo "Template file copied successfully"
+          else
+            echo "Error: Template file $TEMPLATE_PATH not found in pivot repository"
+            exit 1
+          fi
 
       - name: Setup .NET
+        run: |
+          cd target-repo
         uses: actions/setup-dotnet@v4
 
       - name: Check if CSharpier is installed
         run: |
+          cd target-repo
           echo "CSharpierInstalled=false" >> $GITHUB_ENV
           if test -f ".config/dotnet-tools.json"; then
             if jq -e '.tools | has("csharpier")' .config/dotnet-tools.json > /dev/null; then
@@ -76,6 +171,7 @@ jobs:
       - name: Install CSharpier if missing
         if: ${{ env.CSharpierInstalled == 'false' }}
         run: |
+          cd target-repo
           if ! test -f ".config/dotnet-tools.json"; then
             dotnet new tool-manifest
           fi
@@ -84,6 +180,7 @@ jobs:
       - name: Fix legacy dotnet-csharpier reference
         if: ${{ env.CSharpierInstalled == 'true' }}
         run: |
+          cd target-repo
           echo "Checking for legacy 'dotnet-csharpier' command..."
           if grep -q '"dotnet-csharpier"' .config/dotnet-tools.json; then
             echo "Found legacy command. Replacing with 'csharpier'..."
@@ -95,14 +192,16 @@ jobs:
       - name: Dotnet restore and update
         if: ${{ env.CSharpierInstalled == 'true' }}
         run: |
+          cd target-repo
           dotnet tool restore
           dotnet tool update csharpier
 
       - name: CSharpier format check
         continue-on-error: true
         run: |
+          cd target-repo
           set -e
-          dotnet csharpier check . >> csharpier.log 2>&1
+          dotnet csharpier check . >> ../csharpier.log 2>&1
 
       - name: Read csharpier.log
         uses: guibranco/github-file-reader-action-v2@v2.2.808
@@ -143,16 +242,36 @@ jobs:
           message: |
             :warning: [CSharpier](${{ env.GHA_URL }}) executed! There's no need for any changes.
 
+      - name: Update PR with template info
+        uses: mshick/add-pr-comment@v2
+        if: ${{ env.SKIP_TEMPLATE == 'false' }}
+        with:
+          repo-token: ${{ steps.generate_token.outputs.token }}
+          repo-owner: ${{ github.event.inputs.owner }}
+          repo-name: ${{ github.event.inputs.repository }}
+          issue: ${{ github.event.inputs.pull_request }}
+          refresh-message-position: true
+          allow-repeats: true
+          message: |
+            :information_source: [Workflow Template](${{ env.GHA_URL }}) updated!
+
+            A new workflow template has been added: `.github/workflows/${{ github.event.inputs.target_workflow_file }}`
+
       - name: CSharpier format
-        run: dotnet csharpier format .
+        run: |
+          cd target-repo
+          dotnet csharpier format .
 
       - name: Verify Changed files
         uses: tj-actions/verify-changed-files@v20
         id: verify-changed-files
+        with:
+          files_pattern: target-repo/**
 
       - name: Config git
         if: steps.verify-changed-files.outputs.files_changed == 'true'
         run: |
+          cd target-repo
           git config --local user.email "150967461+gstraccini[bot]@users.noreply.github.com"
           git config --local user.name "gstraccini[bot]"
           git config --global --add --bool push.autoSetupRemote true
@@ -160,8 +279,13 @@ jobs:
       - name: Commit files
         if: steps.verify-changed-files.outputs.files_changed == 'true'
         run: |
+          cd target-repo
           git add .
-          git commit -m "CSharpier format"
+          if [ "${{ env.SKIP_TEMPLATE }}" == "false" ]; then
+            git commit -m "CSharpier format + Add workflow template"
+          else
+            git commit -m "CSharpier format"
+          fi
           echo "sha1=$(git rev-parse HEAD)" >> $GITHUB_ENV
           git push origin ${{ github.event.inputs.branch }}
 
