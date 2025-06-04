@@ -7,11 +7,11 @@ on:
 
 permissions:
   contents: write
-    
+
 jobs:
   create-release:
     name: Create Release
-    runs-on: ubuntu-latest    
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
