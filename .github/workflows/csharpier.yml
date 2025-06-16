@@ -110,7 +110,7 @@ jobs:
             ACTION_LINE=$(grep -E "uses:.*$REQUIRED_ACTION@" "$WORKFLOW_FILE" | head -1 || echo "")
             
             if [ -n "$ACTION_LINE" ]; then
-              CURRENT_VERSION=$(echo "$ACTION_LINE" | sed -n "s/.*$REQUIRED_ACTION@\([^[:space:]]*\).*/\1/p")
+              CURRENT_VERSION=$(echo "$ACTION_LINE" | sed -n "s|.*$REQUIRED_ACTION@\([^[:space:]]]*\).*|\1|p")
               echo "Found action version: $CURRENT_VERSION"
               
               # Simple version comparison (assumes semantic versioning)
