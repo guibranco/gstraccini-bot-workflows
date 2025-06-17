@@ -1,0 +1,226 @@
+name: NuGet Check Updates
+
+on:
+  workflow_dispatch:
+    inputs:
+      owner:
+        description: "The owner of the repository to run"
+        required: true
+      repository:
+        description: "The repository to run"
+        required: true
+      branch:
+        description: "The branch to run"
+        required: true
+      pull_request:
+        description: "The pull request number"
+        required: true
+      installationId:
+        description: "The installation id"
+        required: true
+      checkRunId:
+        description: "The check run id"
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+env:
+  GHA_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+jobs:
+  check-updates:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Generate a token
+        id: generate_token
+        uses: tibdex/github-app-token@v2.1.0
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          installation_retrieval_mode: id
+          installation_retrieval_payload: ${{ github.event.inputs.installationId }}
+
+      - name: Mark check run as in_progress
+        uses: LouisBrunner/checks-action@v2.0.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
+          status: in_progress
+          details_url: ${{ env.GHA_URL }}
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          repository: "${{ github.event.inputs.owner}}/${{ github.event.inputs.repository }}"
+          ref: ${{ github.event.inputs.branch }}
+          token: ${{ steps.generate_token.outputs.token }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Install dotnet-outdated tool
+        run: dotnet tool install --global dotnet-outdated-tool
+
+      - name: Run dotnet-outdated (report only)
+        run: |
+          if ! dotnet outdated --include-auto-references --no-restore --pre-release --transitive > outdated.log 2>&1; then
+            echo "::warning::Failed to generate outdated report, continuing with empty report"
+            echo "No .NET projects found or unable to analyze dependencies." > outdated.log
+          fi
+
+      - name: Read outdated.log
+        uses: guibranco/github-file-reader-action-v2@v2.2.822
+        if: always()
+        id: log
+        with:
+          path: outdated.log
+
+      - name: Delete outdated.log
+        if: always()
+        run: rm -f outdated.log
+
+      - name: Update PR with comment (success report)
+        uses: mshick/add-pr-comment@v2
+        if: ${{ success() && steps.log.outputs.contents != '' && !contains(steps.log.outputs.contents, 'No packages to update') }}
+        with:
+          repo-token: ${{ steps.generate_token.outputs.token }}
+          repo-owner: ${{ github.event.inputs.owner }}
+          repo-name: ${{ github.event.inputs.repository }}
+          issue: ${{ github.event.inputs.pull_request }}
+          refresh-message-position: true
+          allow-repeats: true
+          message: |
+            :white_check_mark: [NuGet check updates](${{ env.GHA_URL }}) result:
+
+            ```
+            ${{ steps.log.outputs.contents }}
+            ```
+
+      - name: Run dotnet-outdated -u
+        run: |
+          if ! dotnet outdated --upgrade --include-auto-references --no-restore --pre-release --transitive >> upgrade.log 2>&1; then
+            echo "::warning::Failed to upgrade dependencies, continuing without upgrades"
+            echo "No upgrades were applied." > upgrade.log
+          fi
+
+      - name: Read upgrade.log
+        uses: guibranco/github-file-reader-action-v2@v2.2.822
+        if: always()
+        id: upgrade_log
+        with:
+          path: upgrade.log
+
+      - name: Delete upgrade.log
+        if: always()
+        run: rm -f upgrade.log
+
+      - name: Verify Changed files
+        uses: tj-actions/verify-changed-files@v20
+        id: verify-changed-files
+
+      - name: Config git
+        if: steps.verify-changed-files.outputs.files_changed == 'true'
+        run: |
+          git config --local user.email "150967461+gstraccini[bot]@users.noreply.github.com"
+          git config --local user.name "gstraccini[bot]"
+          git config --global --add --bool push.autoSetupRemote true
+
+      - name: Commit files
+        if: steps.verify-changed-files.outputs.files_changed == 'true'
+        run: |
+          set -euo pipefail
+          git add .
+          git commit -m "[NuGet] Update dependencies" || true
+          sha1="$(git rev-parse HEAD)"
+          echo "sha1=${sha1}" >> "$GITHUB_ENV"
+          git push origin "${{ github.event.inputs.branch }}" || {
+            echo "::error::Failed to push changes"
+            exit 1
+          }
+
+      - name: Update PR with comment (no updates)
+        uses: mshick/add-pr-comment@v2
+        if: ${{ success() && (steps.log.outputs.contents == '' || contains(steps.log.outputs.contents, 'No packages to update')) && steps.verify-changed-files.outputs.files_changed == 'false' }}
+        with:
+          repo-token: ${{ steps.generate_token.outputs.token }}
+          repo-owner: ${{ github.event.inputs.owner }}
+          repo-name: ${{ github.event.inputs.repository }}
+          issue: ${{ github.event.inputs.pull_request }}
+          refresh-message-position: true
+          allow-repeats: true
+          message: |
+            :warning: [NuGet check updates](${{ env.GHA_URL }}) executed! No updates required.
+
+      - name: Update PR with comment (updates applied)
+        uses: mshick/add-pr-comment@v2
+        if: ${{ success() && steps.verify-changed-files.outputs.files_changed == 'true' }}
+        with:
+          repo-token: ${{ steps.generate_token.outputs.token }}
+          repo-owner: ${{ github.event.inputs.owner }}
+          repo-name: ${{ github.event.inputs.repository }}
+          issue: ${{ github.event.inputs.pull_request }}
+          refresh-message-position: true
+          allow-repeats: true
+          message: |
+            :white_check_mark: [NuGet check updates](${{ env.GHA_URL }}) completed! Dependencies have been updated.
+
+            **Upgrade Log:**
+            ```
+            ${{ steps.upgrade_log.outputs.contents }}
+            ```
+
+      - name: Update PR with comment (failure)
+        uses: mshick/add-pr-comment@v2
+        if: ${{ failure() }}
+        with:
+          repo-token: ${{ steps.generate_token.outputs.token }}
+          repo-owner: ${{ github.event.inputs.owner }}
+          repo-name: ${{ github.event.inputs.repository }}
+          issue: ${{ github.event.inputs.pull_request }}
+          refresh-message-position: true
+          allow-repeats: true
+          message: |
+            :x: [NuGet check updates](${{ env.GHA_URL }}) failed!
+
+            **Error Details:**
+            ```
+            ${{ steps.log.outputs.contents }}
+            ```
+
+            **Upgrade Log:**
+            ```
+            ${{ steps.upgrade_log.outputs.contents }}
+            ```
+
+      - name: Mark check run as success
+        if: success()
+        uses: LouisBrunner/checks-action@v2.0.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
+          conclusion: success
+          details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Workflow passed ✅", "summary": "See details in the workflow run."}
+
+      - name: Mark check run as failure
+        if: failure()
+        uses: LouisBrunner/checks-action@v2.0.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
+          conclusion: failure
+          details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Workflow failed ❌", "summary": "See details in the workflow run."}
