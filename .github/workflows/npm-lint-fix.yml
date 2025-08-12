@@ -48,7 +48,7 @@ jobs:
           installation_retrieval_payload: ${{ github.event.inputs.installationId }}
 
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: "${{ github.event.inputs.owner}}/${{ github.event.inputs.repository }}"
           ref: ${{ github.event.inputs.branch }}
