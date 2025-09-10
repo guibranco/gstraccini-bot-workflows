@@ -62,7 +62,7 @@ jobs:
           token: ${{ steps.generate_token.outputs.token }}
 
       - name: Setup .NET 9.0.200
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "9"
 
