@@ -71,13 +71,13 @@ jobs:
             {"title": "Workflow started 🏃🏻‍➡️", "summary": "See details in the workflow run."}
 
       - name: Checkout pivot repository (for template)
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: pivot-repo
           token: ${{ steps.generate_token.outputs.token }}
 
       - name: Checkout target repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: "${{ github.event.inputs.owner}}/${{ github.event.inputs.repository }}"
           ref: ${{ github.event.inputs.branch }}
