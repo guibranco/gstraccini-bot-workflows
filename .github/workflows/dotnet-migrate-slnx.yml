@@ -112,7 +112,7 @@ jobs:
             {"title": "Migration successful ✅", "summary": "The solution file was migrated and committed."}
 
       - name: Update PR with comment (success)
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: success()
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -138,7 +138,7 @@ jobs:
             {"title": "Migration failed ❌", "summary": "Check the logs for errors during .sln migration."}
 
       - name: Update PR with comment (failed)
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: failure()
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
