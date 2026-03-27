@@ -51,7 +51,7 @@ jobs:
           installation_retrieval_payload: ${{ github.event.inputs.installationId }}
 
       - name: Mark check run as in_progress
-        uses: LouisBrunner/checks-action@v2.0.0
+        uses: LouisBrunner/checks-action@v3.0.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
           repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
@@ -131,7 +131,7 @@ jobs:
             ```
       - name: Mark check run as success
         if: success()
-        uses: LouisBrunner/checks-action@v2.0.0
+        uses: LouisBrunner/checks-action@v3.0.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
           repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
@@ -210,7 +210,7 @@ jobs:
 
       - name: Mark check run as failure
         if: failure()
-        uses: LouisBrunner/checks-action@v2.0.0
+        uses: LouisBrunner/checks-action@v3.0.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
           repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
