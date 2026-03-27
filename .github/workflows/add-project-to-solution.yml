@@ -66,7 +66,7 @@ jobs:
         run: dotnet sln add ${{ github.event.inputs.projectPath }}
 
       - name: Update PR with comment
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
           repo-owner: ${{ github.event.inputs.owner }}
