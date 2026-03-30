@@ -114,7 +114,7 @@ jobs:
         run: rm -f ncu.log
 
       - name: Update PR with comment (success)
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: ${{ success() && steps.log.outputs.contents != '' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -142,7 +142,7 @@ jobs:
             {"title": "Workflow passed ✅", "summary": "See details in the workflow run."}
 
       - name: Update PR with comment (no updates)
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: ${{ success() && steps.log.outputs.contents == '' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -155,7 +155,7 @@ jobs:
             :warning: [NPM check updates](${{ env.GHA_URL }}) executed! There's no need for any changes.
 
       - name: Update PR with comment (failure)
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: ${{ failure() && steps.log.outputs.contents != '' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -196,7 +196,7 @@ jobs:
           }
 
       - name: Update PR with comment (failed)
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: ${{ failure() }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
