@@ -76,7 +76,7 @@ jobs:
           git push origin ${{ github.event.inputs.branch }}
 
       - name: Comment PR with revert result
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
           repo-owner: ${{ github.event.inputs.owner }}

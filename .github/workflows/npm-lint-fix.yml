@@ -67,7 +67,7 @@ jobs:
         run: npm run lint -- --fix
 
       - name: Update PR with comment
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
           repo-owner: ${{ github.event.inputs.owner }}
@@ -98,7 +98,7 @@ jobs:
           git push origin ${{ github.event.inputs.branch }}
 
       - name: Update PR with comment
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: failure()
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
