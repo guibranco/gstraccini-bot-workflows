@@ -206,7 +206,7 @@ jobs:
           dotnet csharpier check . >> ../csharpier.log 2>&1
 
       - name: Read csharpier.log
-        uses: guibranco/github-file-reader-action-v2@v2.2.910
+        uses: guibranco/github-file-reader-action-v2@v2.2.916
         id: log
         with:
           path: csharpier.log
@@ -215,7 +215,7 @@ jobs:
         run: rm csharpier.log 2> /dev/null
 
       - name: Update PR with comment (issues found)
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: ${{ steps.log.outputs.contents != '' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -232,7 +232,7 @@ jobs:
             ```
 
       - name: Update PR with comment (no issues)
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: ${{ steps.log.outputs.contents == '' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -245,7 +245,7 @@ jobs:
             :warning: [CSharpier](${{ env.GHA_URL }}) executed! There's no need for any changes.
 
       - name: Update PR with template info
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: ${{ env.SKIP_TEMPLATE == 'false' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -304,7 +304,7 @@ jobs:
             {"title": "Workflow passed ✅", "summary": "See details in the workflow run."}
 
       - name: Update PR with comment (failed)
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: ${{ failure() }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}

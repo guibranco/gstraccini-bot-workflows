@@ -78,7 +78,7 @@ jobs:
           fi
 
       - name: Read outdated.log
-        uses: guibranco/github-file-reader-action-v2@v2.2.910
+        uses: guibranco/github-file-reader-action-v2@v2.2.916
         if: always()
         id: log
         with:
@@ -89,7 +89,7 @@ jobs:
         run: rm -f outdated.log
 
       - name: Update PR with comment (success report)
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: ${{ success() && steps.log.outputs.contents != '' && !contains(steps.log.outputs.contents, 'No packages to update') }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -113,7 +113,7 @@ jobs:
           fi
 
       - name: Read upgrade.log
-        uses: guibranco/github-file-reader-action-v2@v2.2.910
+        uses: guibranco/github-file-reader-action-v2@v2.2.916
         if: always()
         id: upgrade_log
         with:
@@ -148,7 +148,7 @@ jobs:
           }
 
       - name: Update PR with comment (no updates)
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: ${{ success() && (steps.log.outputs.contents == '' || contains(steps.log.outputs.contents, 'No packages to update')) && steps.verify-changed-files.outputs.files_changed == 'false' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -161,7 +161,7 @@ jobs:
             :warning: [NuGet check updates](${{ env.GHA_URL }}) executed! No updates required.
 
       - name: Update PR with comment (updates applied)
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: ${{ success() && steps.verify-changed-files.outputs.files_changed == 'true' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -179,7 +179,7 @@ jobs:
             ```
 
       - name: Update PR with comment (failure)
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: ${{ failure() }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}

@@ -95,7 +95,7 @@ jobs:
         run: rm prettier.log 2> /dev/null
 
       - name: Update PR with comment (issues found)
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: ${{ steps.log.outputs.contents != '' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -112,7 +112,7 @@ jobs:
             ```
 
       - name: Update PR with comment (no issues)
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: ${{ steps.log.outputs.contents == '' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -159,7 +159,7 @@ jobs:
             {"title": "Workflow passed ✅", "summary": "See details in the workflow run."}
 
       - name: Update PR with comment (failed)
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: ${{ failure() }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}

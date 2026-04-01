@@ -77,7 +77,7 @@ jobs:
           cargo clippy 2>&1 > /dev/null >> clippy.log
 
       - name: Read clippy.log
-        uses: guibranco/github-file-reader-action-v2@v2.2.910
+        uses: guibranco/github-file-reader-action-v2@v2.2.916
         id: log
         with:
           path: clippy.log
@@ -86,7 +86,7 @@ jobs:
         run: rm clippy.log 2> /dev/null
 
       - name: Update PR with comment
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: ${{ steps.log.outputs.contents != '' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -103,7 +103,7 @@ jobs:
             ```
 
       - name: Update PR with comment
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: ${{ steps.log.outputs.contents == '' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -138,7 +138,7 @@ jobs:
           git push origin ${{ github.event.inputs.branch }}
 
       - name: Update PR with comment
-        uses: mshick/add-pr-comment@v2
+        uses: mshick/add-pr-comment@v3
         if: failure()
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
