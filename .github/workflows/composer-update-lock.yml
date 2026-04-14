@@ -1,0 +1,152 @@
+name: Update Composer Lock
+
+on:
+  workflow_dispatch:
+    inputs:
+      owner:
+        description: "The owner of the repository to run"
+        required: true
+        default: "guibranco"
+      repository:
+        description: "The repository to run"
+        required: true
+        default: "pancake"
+      branch:
+        description: "The branch to run"
+        required: true
+        default: "main"
+      pull_request:
+        description: "The pull request number"
+        required: true
+        default: "-1"
+      installationId:
+        description: "The installation id"
+        required: true
+        default: "-1"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  GHA_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+jobs:
+  update-composer-lock:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Generate a token
+        id: generate_token
+        uses: tibdex/github-app-token@v2.1.0
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          installation_retrieval_mode: id
+          installation_retrieval_payload: ${{ github.event.inputs.installationId }}
+
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          repository: "${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}"
+          ref: ${{ github.event.inputs.branch }}
+          token: ${{ steps.generate_token.outputs.token }}
+
+      - name: Read PHP version from composer.json
+        id: php-version
+        run: |
+          VERSION=$(jq -r '.require.php // "8.2"' composer.json \
+            | grep -oP '\d+\.\d+' | head -1)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+      
+      - name: Read required extensions from composer.json
+        id: php-extensions
+        run: |
+          EXTS=$(jq -r '[.require | to_entries[] | select(.key | startswith("ext-")) | .key | ltrimstr("ext-")] | join(",")' composer.json)
+          echo "extensions=${EXTS}" >> $GITHUB_OUTPUT
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ steps.php-version.outputs.version }}
+          extensions: ${{ steps.php-extensions.outputs.extensions }}
+          tools: composer:v2
+
+      - name: Run composer update
+        run: |
+          set -e
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          composer update --no-interaction --no-ansi --no-progress 2>&1 | tee update-composer-lock.log
+
+      - name: Read update-composer-lock.log
+        uses: guibranco/github-file-reader-action-v2@latest
+        id: log
+        with:
+          path: update-composer-lock.log
+
+      - name: Delete update-composer-lock.log
+        run: rm update-composer-lock.log 2> /dev/null
+
+      - name: Update PR with comment (success)
+        uses: mshick/add-pr-comment@v3
+        if: ${{ steps.log.outputs.contents != '' }}
+        with:
+          repo-token: ${{ steps.generate_token.outputs.token }}
+          repo-owner: ${{ github.event.inputs.owner }}
+          repo-name: ${{ github.event.inputs.repository }}
+          issue: ${{ github.event.inputs.pull_request }}
+          refresh-message-position: true
+          allow-repeats: true
+          message: |
+            :white_check_mark: [Update composer lock](${{ env.GHA_URL }}) result:
+
+            ```
+            ${{ steps.log.outputs.contents }}
+            ```
+
+      - name: Update PR with comment (no changes)
+        uses: mshick/add-pr-comment@v3
+        if: ${{ steps.log.outputs.contents == '' }}
+        with:
+          repo-token: ${{ steps.generate_token.outputs.token }}
+          repo-owner: ${{ github.event.inputs.owner }}
+          repo-name: ${{ github.event.inputs.repository }}
+          issue: ${{ github.event.inputs.pull_request }}
+          refresh-message-position: true
+          allow-repeats: true
+          message: |
+            :warning: [Update composer lock](${{ env.GHA_URL }}) executed! There's no need for any changes.
+
+      - name: Verify changed files
+        uses: tj-actions/verify-changed-files@v20
+        id: verify-changed-files
+
+      - name: Config git
+        if: steps.verify-changed-files.outputs.files_changed == 'true'
+        run: |
+          git config --local user.email "150967461+gstraccini[bot]@users.noreply.github.com"
+          git config --local user.name "gstraccini[bot]"
+          git config --global --add --bool push.autoSetupRemote true
+
+      - name: Commit files
+        if: steps.verify-changed-files.outputs.files_changed == 'true'
+        run: |
+          git add composer.lock
+          git commit -m "chore: update composer.lock"
+          echo "sha1=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          git push origin ${{ github.event.inputs.branch }}
+
+      - name: Update PR with comment (failure)
+        uses: mshick/add-pr-comment@v3
+        if: failure()
+        with:
+          repo-token: ${{ steps.generate_token.outputs.token }}
+          repo-owner: ${{ github.event.inputs.owner }}
+          repo-name: ${{ github.event.inputs.repository }}
+          issue: ${{ github.event.inputs.pull_request }}
+          refresh-message-position: true
+          allow-repeats: true
+          message: |
+            :x: [Update composer lock](${{ env.GHA_URL }}) failed!
