@@ -6,21 +6,27 @@ on:
       owner:
         description: "The owner of the repository to run"
         required: true
+        default: "guibranco"
       repository:
         description: "The repository to run"
         required: true
+        default: "gstraccini-bot-workflows"
       branch:
         description: "The branch to run"
         required: true
+        default: "main"
       pull_request:
         description: "The pull request number"
         required: true
+        default: "-1"
       installationId:
         description: "The installation id"
         required: true
+        default: "-1"
       checkRunId:
         description: "The check run id"
         required: true
+        default: "-1"
 
 permissions:
   contents: read
@@ -33,6 +39,10 @@ env:
 jobs:
   create-dist:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: write
     steps:
       - name: Generate a token
         id: generate_token
@@ -63,6 +73,7 @@ jobs:
         uses: actions/setup-node@v6.4.0
         with:
           node-version: 22.x
+          cache: npm
 
       - name: Install & Test
         run: npm install
@@ -70,8 +81,7 @@ jobs:
       - name: Run NPM package
         run: npm run package
 
-      - name: Update PR with comment (success)
-        if: success()
+      - name: Update PR with comment
         uses: mshick/add-pr-comment@v3
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -114,9 +124,9 @@ jobs:
           output: |
             {"title": "Workflow passed ✅", "summary": "See details in the workflow run."}
 
-      - name: Update PR with comment (failure)
-        if: failure()
+      - name: Update PR with comment
         uses: mshick/add-pr-comment@v3
+        if: failure()
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
           repo-owner: ${{ github.event.inputs.owner }}
