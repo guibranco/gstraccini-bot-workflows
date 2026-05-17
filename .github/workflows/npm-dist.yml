@@ -40,7 +40,6 @@ jobs:
   create-dist:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
       pull-requests: write
       checks: write
     steps:
