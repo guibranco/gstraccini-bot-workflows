@@ -23,6 +23,10 @@ on:
         description: "The installation id"
         required: true
         default: "-1"
+      checkRunId:
+        description: "Check run ID"
+        required: true
+        default: "-1"
 
 permissions:
   contents: read
@@ -37,6 +41,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      checks: write
     steps:
       - name: Generate a token
         id: generate_token
@@ -46,6 +51,17 @@ jobs:
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
           installation_retrieval_mode: id
           installation_retrieval_payload: ${{ github.event.inputs.installationId }}
+
+      - name: Mark check run as in_progress
+        uses: LouisBrunner/checks-action@v3.1.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
+          status: in_progress
+          details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Workflow started 🏃🏻‍➡️", "summary": "See details in the workflow run."}
 
       - name: Checkout repo
         uses: actions/checkout@v6
@@ -69,7 +85,7 @@ jobs:
           npm test -- -u >> update-snapshot.log
 
       - name: Read update-snapshot.log
-        uses: guibranco/github-file-reader-action-v2@latest
+        uses: guibranco/github-file-reader-action-v2@v2.3.12
         id: log
         with:
           path: update-snapshot.log
@@ -125,7 +141,19 @@ jobs:
           echo "sha1=$(git rev-parse HEAD)" >> $GITHUB_ENV
           git push origin ${{ github.event.inputs.branch }}
 
-      - name: Update PR with comment
+      - name: Mark check run as success
+        if: success()
+        uses: LouisBrunner/checks-action@v3.1.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
+          conclusion: success
+          details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Workflow passed ✅", "summary": "See details in the workflow run."}
+
+      - name: Update PR with comment (failed)
         uses: mshick/add-pr-comment@v3
         if: failure()
         with:
@@ -137,3 +165,15 @@ jobs:
           allow-repeats: true
           message: |
             :x: [Update test snapshots](${{ env.GHA_URL }}) failed!
+
+      - name: Mark check run as failure
+        if: failure()
+        uses: LouisBrunner/checks-action@v3.1.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
+          conclusion: failure
+          details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Workflow failed ❌", "summary": "See details in the workflow run."}
