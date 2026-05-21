@@ -1,0 +1,179 @@
+name: Dotnet Centralised Package Converter
+
+on:
+  workflow_dispatch:
+    inputs:
+      owner:
+        description: "The owner of the repository"
+        required: true
+      repository:
+        description: "The repository name"
+        required: true
+      branch:
+        description: "The branch to push changes to"
+        required: true
+      pull_request:
+        description: "PR number (for comment feedback)"
+        required: true
+      installationId:
+        description: "GitHub App installation ID"
+        required: true
+      checkRunId:
+        description: "Check run ID"
+        required: true
+
+env:
+  GHA_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+jobs:
+  centralised-package-converter:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: write
+    steps:
+      - name: Generate a token
+        id: generate_token
+        uses: tibdex/github-app-token@v2.1.0
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          installation_retrieval_mode: id
+          installation_retrieval_payload: ${{ github.event.inputs.installationId }}
+
+      - name: Mark check run as in_progress
+        uses: LouisBrunner/checks-action@v3.1.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
+          status: in_progress
+          details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Conversion started 🛠️", "summary": "Installing and running central-pkg-converter."}
+
+      - name: Checkout repo
+        uses: actions/checkout@v6
+        with:
+          repository: "${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}"
+          ref: ${{ github.event.inputs.branch }}
+          token: ${{ steps.generate_token.outputs.token }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Check for .sln file in root
+        id: check_sln
+        run: |
+          SLN_FILE=$(ls *.sln 2>/dev/null | head -1)
+          if [ -z "$SLN_FILE" ]; then
+            echo "❌ No .sln file found in repository root!"
+            exit 1
+          fi
+          echo "SLN_FILE=$SLN_FILE" >> $GITHUB_ENV
+          echo "Found .sln file: $SLN_FILE"
+
+      - name: Install central-pkg-converter
+        run: dotnet tool install --global CentralisedPackageConverter
+
+      - name: Run central-pkg-converter
+        run: |
+          central-pkg-converter -f -t "$SLN_FILE" >> central-pkg-converter.log 2>&1
+
+      - name: Read central-pkg-converter.log
+        uses: guibranco/github-file-reader-action-v2@v2.3.12
+        id: log
+        with:
+          path: central-pkg-converter.log
+
+      - name: Delete central-pkg-converter.log
+        run: rm central-pkg-converter.log 2> /dev/null
+
+      - name: Update PR with comment (conversion output)
+        uses: mshick/add-pr-comment@v3
+        if: ${{ steps.log.outputs.contents != '' }}
+        with:
+          repo-token: ${{ steps.generate_token.outputs.token }}
+          repo-owner: ${{ github.event.inputs.owner }}
+          repo-name: ${{ github.event.inputs.repository }}
+          issue: ${{ github.event.inputs.pull_request }}
+          refresh-message-position: true
+          allow-repeats: true
+          message: |
+            :package: [Centralised Package Converter](${{ env.GHA_URL }}) result:
+
+            ```
+            ${{ steps.log.outputs.contents }}
+            ```
+
+      - name: Update PR with comment (no output)
+        uses: mshick/add-pr-comment@v3
+        if: ${{ steps.log.outputs.contents == '' }}
+        with:
+          repo-token: ${{ steps.generate_token.outputs.token }}
+          repo-owner: ${{ github.event.inputs.owner }}
+          repo-name: ${{ github.event.inputs.repository }}
+          issue: ${{ github.event.inputs.pull_request }}
+          refresh-message-position: true
+          allow-repeats: true
+          message: |
+            :warning: [Centralised Package Converter](${{ env.GHA_URL }}) executed with no output.
+
+      - name: Verify Changed files
+        uses: tj-actions/verify-changed-files@v20
+        id: verify-changed-files
+
+      - name: Config git
+        if: steps.verify-changed-files.outputs.files_changed == 'true'
+        run: |
+          git config --local user.email "150967461+gstraccini[bot]@users.noreply.github.com"
+          git config --local user.name "gstraccini[bot]"
+          git config --global --add --bool push.autoSetupRemote true
+
+      - name: Commit files
+        if: steps.verify-changed-files.outputs.files_changed == 'true'
+        run: |
+          git add .
+          git commit -m "Convert to centralised package management via central-pkg-converter"
+          echo "sha1=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          git push origin ${{ github.event.inputs.branch }}
+
+      - name: Mark check run as success
+        if: success()
+        uses: LouisBrunner/checks-action@v3.1.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
+          conclusion: success
+          details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Conversion successful ✅", "summary": "See details in the workflow run."}
+
+      - name: Update PR with comment (failed)
+        uses: mshick/add-pr-comment@v3
+        if: ${{ failure() }}
+        with:
+          repo-token: ${{ steps.generate_token.outputs.token }}
+          repo-owner: ${{ github.event.inputs.owner }}
+          repo-name: ${{ github.event.inputs.repository }}
+          issue: ${{ github.event.inputs.pull_request }}
+          refresh-message-position: true
+          allow-repeats: true
+          message: |
+            :x: [Centralised Package Converter](${{ env.GHA_URL }}) failed!
+
+      - name: Mark check run as failure
+        if: failure()
+        uses: LouisBrunner/checks-action@v3.1.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
+          conclusion: failure
+          details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Conversion failed ❌", "summary": "Check the logs for errors during package conversion."}
