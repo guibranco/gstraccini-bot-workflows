@@ -86,6 +86,13 @@ jobs:
         run: |
           NO_COLOR=1 central-pkg-converter -f -t "$SLN_FILE" 2>&1 | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g; s/\[[a-zA-Z0-9/]*\]//g' >> central-pkg-converter.log
 
+      - name: Validate conversion
+        id: validate
+        continue-on-error: true
+        run: |
+          printf "\n--- Validation (dotnet restore) ---\n" >> central-pkg-converter.log
+          dotnet restore --ignore-failed-sources "$SLN_FILE" 2>&1 | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' >> central-pkg-converter.log
+
       - name: Read central-pkg-converter.log
         uses: guibranco/github-file-reader-action-v2@v2.3.12
         id: log
@@ -124,6 +131,13 @@ jobs:
           allow-repeats: true
           message: |
             :warning: [Centralised Package Converter](${{ env.GHA_URL }}) executed with no output.
+
+      - name: Fail if validation failed
+        if: steps.validate.outcome == 'failure'
+        run: |
+          echo "❌ dotnet restore failed after conversion — some packages may be missing from Directory.Packages.props."
+          echo "Check the log above for NU1010 errors and add the missing PackageVersion entries manually."
+          exit 1
 
       - name: Verify Changed files
         uses: tj-actions/verify-changed-files@v20
