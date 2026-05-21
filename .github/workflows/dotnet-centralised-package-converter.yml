@@ -81,7 +81,7 @@ jobs:
 
       - name: Run central-pkg-converter
         run: |
-          central-pkg-converter -f -t "$SLN_FILE" >> central-pkg-converter.log 2>&1
+          central-pkg-converter -f -t ./ >> central-pkg-converter.log 2>&1
 
       - name: Read central-pkg-converter.log
         uses: guibranco/github-file-reader-action-v2@v2.3.12
