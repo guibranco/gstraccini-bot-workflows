@@ -54,6 +54,7 @@ GStraccini-bot can handle various tasks. Here’s a list of commands:
 - `@gstraccini copy issue <repository>`: Copies an issue from one repository to another.
 - `@gstraccini create labels <style> <categories>`: Creates the default labels in the repository.
 - `@gstraccini csharpier`: Formats the C# code using CSharpier (only for .NET projects).
+- `@gstraccini dotnet centralised package converter`: Converts a .NET solution to use Central Package Management (CPM) via `central-pkg-converter` (only for .NET projects).
 - `@gstraccini fix csproj`: Updates the .csproj file with the packages.config version of NuGet packages (only for .NET Framework projects).
 - `@gstraccini npm check updates`: Updates dependencies in a package.json and package-lock.json.
 - `@gstraccini npm dist`: Generates or regenerates the dist files.
