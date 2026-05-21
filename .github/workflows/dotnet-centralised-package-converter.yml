@@ -21,6 +21,10 @@ on:
       checkRunId:
         description: "Check run ID"
         required: true
+      autofix:
+        description: "Attempt to automatically fix NU1010/NU1008 errors by adding missing PackageVersion entries and removing duplicate Version attributes"
+        required: false
+        default: "false"
 
 env:
   GHA_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
@@ -84,7 +88,70 @@ jobs:
 
       - name: Run central-pkg-converter
         run: |
-          NO_COLOR=1 central-pkg-converter -f -t "$SLN_FILE" 2>&1 | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g; s/\[[a-zA-Z0-9/]*\]//g' >> central-pkg-converter.log
+          NO_COLOR=1 central-pkg-converter -f -t "./" 2>&1 | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g; s/\[[a-zA-Z0-9/]*\]//g' >> central-pkg-converter.log
+
+      - name: Autofix missing PackageVersion entries
+        if: ${{ github.event.inputs.autofix == 'true' }}
+        run: |
+          printf "\n--- Autofix ---\n" >> central-pkg-converter.log
+          cat > /tmp/cpm_autofix.py << 'AUTOFIX'
+          import re, os, glob
+
+          props_file = "Directory.Packages.props"
+
+          if not os.path.exists(props_file):
+              print("No Directory.Packages.props found, skipping autofix.")
+              exit(0)
+
+          props_content = open(props_file).read()
+
+          # Packages already declared in Directory.Packages.props
+          existing = set(re.findall(r'<PackageVersion\s+Include="([^"]+)"', props_content))
+
+          # Collect packages with explicit versions from csproj files not yet in props (NU1010 fix)
+          to_add = {}
+          for csproj in sorted(glob.glob("**/*.csproj", recursive=True)):
+              content = open(csproj).read()
+              for m in re.finditer(r'<PackageReference\s+Include="([^"]+)"(?:[^>]*?)Version="([^"]+)"', content, re.DOTALL):
+                  pkg, ver = m.group(1), m.group(2).strip()
+                  if ver and ver != "." and pkg not in existing and pkg not in to_add:
+                      to_add[pkg] = ver
+
+          if to_add:
+              entries = "\n".join(f'    <PackageVersion Include="{p}" Version="{v}" />' for p, v in sorted(to_add.items()))
+              insert_at = props_content.rfind("</ItemGroup>")
+              if insert_at == -1:
+                  props_content = props_content.replace("</Project>", f"  <ItemGroup>\n{entries}\n  </ItemGroup>\n</Project>")
+              else:
+                  props_content = props_content[:insert_at] + entries + "\n  " + props_content[insert_at:]
+              open(props_file, "w").write(props_content)
+              print(f"Added {len(to_add)} missing PackageVersion entries to {props_file}:")
+              for p, v in sorted(to_add.items()):
+                  print(f"  {p} {v}")
+          else:
+              print(f"No missing PackageVersion entries with resolvable versions found.")
+
+          # NU1008 fix: remove Version from PackageReference where PackageVersion now exists
+          all_versioned = set(re.findall(r'<PackageVersion\s+Include="([^"]+)"', props_content))
+          fixed_files = []
+          for csproj in sorted(glob.glob("**/*.csproj", recursive=True)):
+              content = open(csproj).read()
+              new_content = content
+              for pkg in all_versioned:
+                  new_content = re.sub(
+                      r'(<PackageReference\s+Include="' + re.escape(pkg) + r'"[^>]*?)\s+Version="[^"]*"',
+                      r"\1", new_content, flags=re.DOTALL)
+              if new_content != content:
+                  open(csproj, "w").write(new_content)
+                  fixed_files.append(csproj)
+
+          if fixed_files:
+              print(f"\nRemoved stale Version attribute from {len(fixed_files)} project file(s) (NU1008 fix):")
+              for f in fixed_files:
+                  print(f"  {f}")
+          AUTOFIX
+          python3 /tmp/cpm_autofix.py >> central-pkg-converter.log 2>&1
+          rm -f /tmp/cpm_autofix.py
 
       - name: Validate conversion
         id: validate
