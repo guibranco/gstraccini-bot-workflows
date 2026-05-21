@@ -3,5 +3,6 @@
     "sonarlint.connectedMode.project": {
         "connectionId": "guibranco",
         "projectKey": "guibranco_gstraccini-bot-workflows"
-    }
+    },
+    "sarif-viewer.connectToGithubCodeScanning": "on"
 }

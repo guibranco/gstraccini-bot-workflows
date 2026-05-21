@@ -65,16 +65,19 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      - name: Check for .sln file in root
+      - name: Check for .sln or .slnx file in root
         id: check_sln
         run: |
-          SLN_FILE=$(ls *.sln 2>/dev/null | head -1)
+          SLN_FILE=$(ls *.slnx 2>/dev/null | head -1)
           if [ -z "$SLN_FILE" ]; then
-            echo "❌ No .sln file found in repository root!"
+            SLN_FILE=$(ls *.sln 2>/dev/null | head -1)
+          fi
+          if [ -z "$SLN_FILE" ]; then
+            echo "❌ No .sln or .slnx file found in repository root!"
             exit 1
           fi
           echo "SLN_FILE=$SLN_FILE" >> $GITHUB_ENV
-          echo "Found .sln file: $SLN_FILE"
+          echo "Found solution file: $SLN_FILE"
 
       - name: Install central-pkg-converter
         run: dotnet tool install --global CentralisedPackageConverter
