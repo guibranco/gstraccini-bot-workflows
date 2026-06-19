@@ -161,7 +161,7 @@ jobs:
           dotnet restore --ignore-failed-sources "$SLN_FILE" 2>&1 | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g' >> central-pkg-converter.log
 
       - name: Read central-pkg-converter.log
-        uses: guibranco/github-file-reader-action-v2@v2.3.18
+        uses: guibranco/github-file-reader-action-v2@v2.3.25
         id: log
         with:
           path: central-pkg-converter.log
