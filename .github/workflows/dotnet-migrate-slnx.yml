@@ -55,7 +55,7 @@ jobs:
             {"title": "Migrate started 🛠️", "summary": "Checking and migrating .sln file."}
 
       - name: Checkout repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: "${{ github.event.inputs.owner}}/${{ github.event.inputs.repository }}"
           ref: ${{ github.event.inputs.branch }}
