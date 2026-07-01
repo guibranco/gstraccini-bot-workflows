@@ -58,6 +58,7 @@ GStraccini-bot can handle various tasks. Here’s a list of commands:
 - `@gstraccini fix csproj`: Updates the .csproj file with the packages.config version of NuGet packages (only for .NET Framework projects).
 - `@gstraccini npm check updates`: Updates dependencies in a package.json and package-lock.json.
 - `@gstraccini npm dist`: Generates or regenerates the dist files.
+- `@gstraccini pin action <workflow>`: Pins GitHub Actions references to their commit SHA using pin-github-action. Defaults to `.github/workflows/*.yml` when omitted.
 - `@gstraccini prettier`: Formats the code using Prettier.
 - `@gstraccini rerun checks <conclusion>`: Reruns the checks in the target pull request.
 - `@gstraccini rerun workflows <conclusion>`: Reruns the workflows (actions) in the target pull request.
