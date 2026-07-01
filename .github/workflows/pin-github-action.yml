@@ -21,7 +21,7 @@ on:
       checkRunId:
         description: "The check run id"
         required: true
-      workflowPath:
+      workflow:
         description: "The workflow file path or glob pattern to pin"
         required: false
         default: ".github/workflows/*.yml"
@@ -76,7 +76,7 @@ jobs:
 
       - name: Run pin-github-action
         env:
-          WORKFLOW_PATH: ${{ github.event.inputs.workflowPath }}
+          WORKFLOW_PATH: ${{ github.event.inputs.workflow }}
         run: |
           set -eo pipefail
           PATTERN="${WORKFLOW_PATH:-.github/workflows/*.yml}"
@@ -102,7 +102,7 @@ jobs:
           refresh-message-position: true
           allow-repeats: true
           message: |
-            :pushpin: [Pin Actions](${{ env.GHA_URL }}) result:
+            :pushpin: [Pin GitHub Action](${{ env.GHA_URL }}) result:
 
             ```
             ${{ steps.log.outputs.contents }}
@@ -119,7 +119,7 @@ jobs:
           refresh-message-position: true
           allow-repeats: true
           message: |
-            :warning: [Pin Actions](${{ env.GHA_URL }}) executed! There's no need for any changes.
+            :warning: [Pin GitHub Action](${{ env.GHA_URL }}) executed! There's no need for any changes.
 
       - name: Verify changed files
         uses: tj-actions/verify-changed-files@v20
@@ -163,7 +163,7 @@ jobs:
           refresh-message-position: true
           allow-repeats: true
           message: |
-            :x: [Pin Actions](${{ env.GHA_URL }}) failed!
+            :x: [Pin GitHub Action](${{ env.GHA_URL }}) failed!
 
       - name: Mark check run as failure
         if: failure()
