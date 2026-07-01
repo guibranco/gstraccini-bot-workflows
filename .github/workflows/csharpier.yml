@@ -52,7 +52,7 @@ jobs:
     steps:
       - name: Generate a token
         id: generate_token
-        uses: tibdex/github-app-token@v2.1.0
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
@@ -60,7 +60,7 @@ jobs:
           installation_retrieval_payload: ${{ github.event.inputs.installationId }}
 
       - name: Mark check run as in_progress
-        uses: LouisBrunner/checks-action@v3.1.0
+        uses: LouisBrunner/checks-action@937cbbcde3259005b50746dc91cde29098aac2ff # v3.1.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
           repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
@@ -71,13 +71,13 @@ jobs:
             {"title": "Workflow started 🏃🏻‍➡️", "summary": "See details in the workflow run."}
 
       - name: Checkout pivot repository (for template)
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           path: pivot-repo
           token: ${{ steps.generate_token.outputs.token }}
 
       - name: Checkout target repo
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           repository: "${{ github.event.inputs.owner}}/${{ github.event.inputs.repository }}"
           ref: ${{ github.event.inputs.branch }}
@@ -154,7 +154,7 @@ jobs:
           fi
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
         with:
           dotnet-version: |
             8.0.401
@@ -206,7 +206,7 @@ jobs:
           dotnet csharpier check . >> ../csharpier.log 2>&1
 
       - name: Read csharpier.log
-        uses: guibranco/github-file-reader-action-v2@v2.3.33
+        uses: guibranco/github-file-reader-action-v2@0d7d920c801ce00cd5180e9e737d62d71ae3b12f # v2.3.33
         id: log
         with:
           path: csharpier.log
@@ -215,7 +215,7 @@ jobs:
         run: rm csharpier.log 2> /dev/null
 
       - name: Update PR with comment (issues found)
-        uses: mshick/add-pr-comment@v3
+        uses: mshick/add-pr-comment@ec328af66588ab8f77cdeb2c264f14aba45bbf59 # v3
         if: ${{ steps.log.outputs.contents != '' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -232,7 +232,7 @@ jobs:
             ```
 
       - name: Update PR with comment (no issues)
-        uses: mshick/add-pr-comment@v3
+        uses: mshick/add-pr-comment@ec328af66588ab8f77cdeb2c264f14aba45bbf59 # v3
         if: ${{ steps.log.outputs.contents == '' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -245,7 +245,7 @@ jobs:
             :warning: [CSharpier](${{ env.GHA_URL }}) executed! There's no need for any changes.
 
       - name: Update PR with template info
-        uses: mshick/add-pr-comment@v3
+        uses: mshick/add-pr-comment@ec328af66588ab8f77cdeb2c264f14aba45bbf59 # v3
         if: ${{ env.SKIP_TEMPLATE == 'false' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -265,7 +265,7 @@ jobs:
           dotnet csharpier format .
 
       - name: Verify Changed files
-        uses: tj-actions/verify-changed-files@v20
+        uses: tj-actions/verify-changed-files@a1c6acee9df209257a246f2cc6ae8cb6581c1edf # v20
         id: verify-changed-files
         with:
           path: target-repo
@@ -293,7 +293,7 @@ jobs:
 
       - name: Mark check run as success
         if: success()
-        uses: LouisBrunner/checks-action@v3.1.0
+        uses: LouisBrunner/checks-action@937cbbcde3259005b50746dc91cde29098aac2ff # v3.1.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
           repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
@@ -304,7 +304,7 @@ jobs:
             {"title": "Workflow passed ✅", "summary": "See details in the workflow run."}
 
       - name: Update PR with comment (failed)
-        uses: mshick/add-pr-comment@v3
+        uses: mshick/add-pr-comment@ec328af66588ab8f77cdeb2c264f14aba45bbf59 # v3
         if: ${{ failure() }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -318,7 +318,7 @@ jobs:
 
       - name: Mark check run as failure
         if: failure()
-        uses: LouisBrunner/checks-action@v3.1.0
+        uses: LouisBrunner/checks-action@937cbbcde3259005b50746dc91cde29098aac2ff # v3.1.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
           repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
