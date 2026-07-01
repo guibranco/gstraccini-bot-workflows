@@ -36,7 +36,7 @@ jobs:
     steps:
       - name: Generate a token
         id: generate_token
-        uses: tibdex/github-app-token@v2.1.0
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
@@ -44,7 +44,7 @@ jobs:
           installation_retrieval_payload: ${{ github.event.inputs.installationId }}
 
       - name: Mark check run as in_progress
-        uses: LouisBrunner/checks-action@v3.1.0
+        uses: LouisBrunner/checks-action@937cbbcde3259005b50746dc91cde29098aac2ff # v3.1.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
           repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
@@ -55,14 +55,14 @@ jobs:
             {"title": "Migrate started 🛠️", "summary": "Checking and migrating .sln file."}
 
       - name: Checkout repo
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           repository: "${{ github.event.inputs.owner}}/${{ github.event.inputs.repository }}"
           ref: ${{ github.event.inputs.branch }}
           token: ${{ steps.generate_token.outputs.token }}
 
       - name: Setup .NET 10
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5
         with:
           dotnet-version: "10.0.x"
 
@@ -101,7 +101,7 @@ jobs:
 
       - name: Mark check run as success
         if: success()
-        uses: LouisBrunner/checks-action@v3.1.0
+        uses: LouisBrunner/checks-action@937cbbcde3259005b50746dc91cde29098aac2ff # v3.1.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
           repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
@@ -112,7 +112,7 @@ jobs:
             {"title": "Migration successful ✅", "summary": "The solution file was migrated and committed."}
 
       - name: Update PR with comment (success)
-        uses: mshick/add-pr-comment@v3
+        uses: mshick/add-pr-comment@ec328af66588ab8f77cdeb2c264f14aba45bbf59 # v3
         if: success()
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -127,7 +127,7 @@ jobs:
 
       - name: Mark check run as failure
         if: failure()
-        uses: LouisBrunner/checks-action@v3.1.0
+        uses: LouisBrunner/checks-action@937cbbcde3259005b50746dc91cde29098aac2ff # v3.1.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
           repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
@@ -138,7 +138,7 @@ jobs:
             {"title": "Migration failed ❌", "summary": "Check the logs for errors during .sln migration."}
 
       - name: Update PR with comment (failed)
-        uses: mshick/add-pr-comment@v3
+        uses: mshick/add-pr-comment@ec328af66588ab8f77cdeb2c264f14aba45bbf59 # v3
         if: failure()
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}

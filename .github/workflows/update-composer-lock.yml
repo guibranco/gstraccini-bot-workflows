@@ -44,7 +44,7 @@ jobs:
     steps:
       - name: Generate a token
         id: generate_token
-        uses: tibdex/github-app-token@v2.1.0
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
@@ -52,7 +52,7 @@ jobs:
           installation_retrieval_payload: ${{ github.event.inputs.installationId }}
 
       - name: Mark check run as in_progress
-        uses: LouisBrunner/checks-action@v3.1.0
+        uses: LouisBrunner/checks-action@937cbbcde3259005b50746dc91cde29098aac2ff # v3.1.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
           repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
@@ -63,7 +63,7 @@ jobs:
             {"title": "Workflow started 🏃🏻‍➡️", "summary": "See details in the workflow run."}
 
       - name: Checkout repo
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           repository: "${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}"
           ref: ${{ github.event.inputs.branch }}
@@ -83,7 +83,7 @@ jobs:
           echo "extensions=${EXTS}" >> $GITHUB_OUTPUT
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: ${{ steps.php-version.outputs.version }}
           extensions: ${{ steps.php-extensions.outputs.extensions }}
@@ -96,7 +96,7 @@ jobs:
           composer update --no-interaction --no-ansi --no-progress 2>&1 | tee update-composer-lock.log
 
       - name: Read update-composer-lock.log
-        uses: guibranco/github-file-reader-action-v2@latest
+        uses: guibranco/github-file-reader-action-v2@0bde70edb8e1a58f31372048472b5d914b7f81e1 # latest
         id: log
         with:
           path: update-composer-lock.log
@@ -105,7 +105,7 @@ jobs:
         run: rm update-composer-lock.log 2> /dev/null
 
       - name: Update PR with comment (success)
-        uses: mshick/add-pr-comment@v3
+        uses: mshick/add-pr-comment@ec328af66588ab8f77cdeb2c264f14aba45bbf59 # v3
         if: ${{ steps.log.outputs.contents != '' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -122,7 +122,7 @@ jobs:
             ```
 
       - name: Update PR with comment (no changes)
-        uses: mshick/add-pr-comment@v3
+        uses: mshick/add-pr-comment@ec328af66588ab8f77cdeb2c264f14aba45bbf59 # v3
         if: ${{ steps.log.outputs.contents == '' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -135,7 +135,7 @@ jobs:
             :warning: [Update composer lock](${{ env.GHA_URL }}) executed! There's no need for any changes.
 
       - name: Verify changed files
-        uses: tj-actions/verify-changed-files@v20
+        uses: tj-actions/verify-changed-files@a1c6acee9df209257a246f2cc6ae8cb6581c1edf # v20
         id: verify-changed-files
 
       - name: Config git
@@ -155,7 +155,7 @@ jobs:
 
       - name: Mark check run as success
         if: success()
-        uses: LouisBrunner/checks-action@v3.1.0
+        uses: LouisBrunner/checks-action@937cbbcde3259005b50746dc91cde29098aac2ff # v3.1.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
           repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
@@ -166,7 +166,7 @@ jobs:
             {"title": "Workflow passed ✅", "summary": "See details in the workflow run."}
 
       - name: Update PR with comment (failure)
-        uses: mshick/add-pr-comment@v3
+        uses: mshick/add-pr-comment@ec328af66588ab8f77cdeb2c264f14aba45bbf59 # v3
         if: failure()
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -180,7 +180,7 @@ jobs:
 
       - name: Mark check run as failure
         if: failure()
-        uses: LouisBrunner/checks-action@v3.1.0
+        uses: LouisBrunner/checks-action@937cbbcde3259005b50746dc91cde29098aac2ff # v3.1.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
           repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}

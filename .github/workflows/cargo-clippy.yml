@@ -45,7 +45,7 @@ jobs:
     steps:
       - name: Generate a token
         id: generate_token
-        uses: tibdex/github-app-token@v2.1.0
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
         with:
           app_id: ${{ secrets.APP_ID }}
           private_key: ${{ secrets.APP_PRIVATE_KEY }}
@@ -53,7 +53,7 @@ jobs:
           installation_retrieval_payload: ${{ github.event.inputs.installationId }}
 
       - name: Mark check run as in_progress
-        uses: LouisBrunner/checks-action@v3.1.0
+        uses: LouisBrunner/checks-action@937cbbcde3259005b50746dc91cde29098aac2ff # v3.1.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
           repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
@@ -64,20 +64,20 @@ jobs:
             {"title": "Workflow started 🏃🏻‍➡️", "summary": "See details in the workflow run."}
 
       - name: Checkout repo
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           repository: "${{ github.event.inputs.owner}}/${{ github.event.inputs.repository }}"
           ref: ${{ github.event.inputs.branch }}
           token: ${{ steps.generate_token.outputs.token }}
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
+        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af # v1
         with:
           toolchain: stable
           override: true
 
       - name: Cache Cargo registry
-        uses: actions/cache@v6
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: |
             ~/.cargo/registry
@@ -93,7 +93,7 @@ jobs:
           cargo clippy 2>&1 >> clippy.log
 
       - name: Read clippy.log
-        uses: guibranco/github-file-reader-action-v2@v2.3.30
+        uses: guibranco/github-file-reader-action-v2@0d7d920c801ce00cd5180e9e737d62d71ae3b12f # v2.3.33
         id: log
         with:
           path: clippy.log
@@ -102,7 +102,7 @@ jobs:
         run: rm clippy.log 2> /dev/null
 
       - name: Update PR with comment
-        uses: mshick/add-pr-comment@v3
+        uses: mshick/add-pr-comment@ec328af66588ab8f77cdeb2c264f14aba45bbf59 # v3
         if: ${{ steps.log.outputs.contents != '' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -119,7 +119,7 @@ jobs:
             ```
 
       - name: Update PR with comment
-        uses: mshick/add-pr-comment@v3
+        uses: mshick/add-pr-comment@ec328af66588ab8f77cdeb2c264f14aba45bbf59 # v3
         if: ${{ steps.log.outputs.contents == '' }}
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -135,7 +135,7 @@ jobs:
         run: cargo clippy --fix --allow-dirty --allow-staged
 
       - name: Verify Changed files
-        uses: tj-actions/verify-changed-files@v20
+        uses: tj-actions/verify-changed-files@a1c6acee9df209257a246f2cc6ae8cb6581c1edf # v20
         id: verify-changed-files
 
       - name: Config git
@@ -155,7 +155,7 @@ jobs:
 
       - name: Mark check run as success
         if: success()
-        uses: LouisBrunner/checks-action@v3.1.0
+        uses: LouisBrunner/checks-action@937cbbcde3259005b50746dc91cde29098aac2ff # v3.1.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
           repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
@@ -166,7 +166,7 @@ jobs:
             {"title": "Workflow passed ✅", "summary": "See details in the workflow run."}
 
       - name: Update PR with comment (failed)
-        uses: mshick/add-pr-comment@v3
+        uses: mshick/add-pr-comment@ec328af66588ab8f77cdeb2c264f14aba45bbf59 # v3
         if: failure()
         with:
           repo-token: ${{ steps.generate_token.outputs.token }}
@@ -180,7 +180,7 @@ jobs:
 
       - name: Mark check run as failure
         if: failure()
-        uses: LouisBrunner/checks-action@v3.1.0
+        uses: LouisBrunner/checks-action@937cbbcde3259005b50746dc91cde29098aac2ff # v3.1.0
         with:
           token: ${{ steps.generate_token.outputs.token }}
           repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
