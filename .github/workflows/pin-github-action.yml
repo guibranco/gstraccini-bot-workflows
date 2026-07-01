@@ -1,0 +1,178 @@
+name: Pin GitHub Action
+
+on:
+  workflow_dispatch:
+    inputs:
+      owner:
+        description: "The owner of the repository to run"
+        required: true
+      repository:
+        description: "The repository to run"
+        required: true
+      branch:
+        description: "The branch to run"
+        required: true
+      pull_request:
+        description: "The pull request number"
+        required: true
+      installationId:
+        description: "The installation id"
+        required: true
+      checkRunId:
+        description: "The check run id"
+        required: true
+      workflowPath:
+        description: "The workflow file path or glob pattern to pin"
+        required: false
+        default: ".github/workflows/*.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+env:
+  GHA_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+jobs:
+  pin-github-action:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: write
+    steps:
+      - name: Generate a token
+        id: generate_token
+        uses: tibdex/github-app-token@v2.1.0
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+          installation_retrieval_mode: id
+          installation_retrieval_payload: ${{ github.event.inputs.installationId }}
+
+      - name: Mark check run as in_progress
+        uses: LouisBrunner/checks-action@v3.1.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
+          status: in_progress
+          details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Workflow started 🏃🏻‍➡️", "summary": "See details in the workflow run."}
+
+      - name: Checkout repo
+        uses: actions/checkout@v7
+        with:
+          repository: "${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}"
+          ref: ${{ github.event.inputs.branch }}
+          token: ${{ steps.generate_token.outputs.token }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 22.x
+
+      - name: Run pin-github-action
+        env:
+          WORKFLOW_PATH: ${{ github.event.inputs.workflowPath }}
+        run: |
+          set -eo pipefail
+          PATTERN="${WORKFLOW_PATH:-.github/workflows/*.yml}"
+          npx --yes pin-github-action $PATTERN 2>&1 | tee pin-github-action.log
+
+      - name: Read pin-github-action.log
+        uses: guibranco/github-file-reader-action-v2@v2.3.30
+        id: log
+        with:
+          path: pin-github-action.log
+
+      - name: Delete pin-github-action.log
+        run: rm pin-github-action.log 2> /dev/null
+
+      - name: Update PR with comment (result)
+        uses: mshick/add-pr-comment@v3
+        if: ${{ steps.log.outputs.contents != '' }}
+        with:
+          repo-token: ${{ steps.generate_token.outputs.token }}
+          repo-owner: ${{ github.event.inputs.owner }}
+          repo-name: ${{ github.event.inputs.repository }}
+          issue: ${{ github.event.inputs.pull_request }}
+          refresh-message-position: true
+          allow-repeats: true
+          message: |
+            :pushpin: [Pin Actions](${{ env.GHA_URL }}) result:
+
+            ```
+            ${{ steps.log.outputs.contents }}
+            ```
+
+      - name: Update PR with comment (no output)
+        uses: mshick/add-pr-comment@v3
+        if: ${{ steps.log.outputs.contents == '' }}
+        with:
+          repo-token: ${{ steps.generate_token.outputs.token }}
+          repo-owner: ${{ github.event.inputs.owner }}
+          repo-name: ${{ github.event.inputs.repository }}
+          issue: ${{ github.event.inputs.pull_request }}
+          refresh-message-position: true
+          allow-repeats: true
+          message: |
+            :warning: [Pin Actions](${{ env.GHA_URL }}) executed! There's no need for any changes.
+
+      - name: Verify changed files
+        uses: tj-actions/verify-changed-files@v20
+        id: verify-changed-files
+
+      - name: Config git
+        if: steps.verify-changed-files.outputs.files_changed == 'true'
+        run: |
+          git config --local user.email "150967461+gstraccini[bot]@users.noreply.github.com"
+          git config --local user.name "gstraccini[bot]"
+          git config --global --add --bool push.autoSetupRemote true
+
+      - name: Commit files
+        if: steps.verify-changed-files.outputs.files_changed == 'true'
+        run: |
+          git add .
+          git commit -m "chore: pin GitHub Actions to immutable commit SHA"
+          echo "sha1=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          git push origin ${{ github.event.inputs.branch }}
+
+      - name: Mark check run as success
+        if: success()
+        uses: LouisBrunner/checks-action@v3.1.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
+          conclusion: success
+          details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Workflow passed ✅", "summary": "See details in the workflow run."}
+
+      - name: Update PR with comment (failure)
+        uses: mshick/add-pr-comment@v3
+        if: failure()
+        with:
+          repo-token: ${{ steps.generate_token.outputs.token }}
+          repo-owner: ${{ github.event.inputs.owner }}
+          repo-name: ${{ github.event.inputs.repository }}
+          issue: ${{ github.event.inputs.pull_request }}
+          refresh-message-position: true
+          allow-repeats: true
+          message: |
+            :x: [Pin Actions](${{ env.GHA_URL }}) failed!
+
+      - name: Mark check run as failure
+        if: failure()
+        uses: LouisBrunner/checks-action@v3.1.0
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repo: ${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}
+          check_id: ${{ github.event.inputs.checkRunId }}
+          conclusion: failure
+          details_url: ${{ env.GHA_URL }}
+          output: |
+            {"title": "Workflow failed ❌", "summary": "See details in the workflow run."}
