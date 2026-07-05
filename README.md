@@ -9,11 +9,6 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/guibranco/gstraccini-bot-workflows/actions/workflows/build.yml"><img src="https://github.com/guibranco/gstraccini-bot-workflows/actions/workflows/build.yml/badge.svg" alt="Build"></a>
-  <a href="https://github.com/guibranco/gstraccini-bot-workflows/actions/workflows/deploy.yml"><img src="https://github.com/guibranco/gstraccini-bot-workflows/actions/workflows/deploy.yml/badge.svg" alt="Deploy via FTP"></a>
-</p>
-
-<p align="center">
   <a href="https://bot.straccini.com"><strong>Live Dashboard</strong></a> ·
   <a href="https://docs.bot.straccini.com"><strong>Documentation</strong></a> ·
   <a href="https://docs.bot.straccini.com/docs/commands"><strong>Commands Reference</strong></a> ·
