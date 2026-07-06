@@ -89,8 +89,11 @@ jobs:
             exit 0
           fi
 
-          npx --yes pin-github-action "${FILES[@]}" 2>&1 | tee pin-github-action.log
-          exit_code="${PIPESTATUS[0]}"
+          if npx --yes pin-github-action "${FILES[@]}" 2>&1 | tee pin-github-action.log; then
+            exit_code=0
+          else
+            exit_code="${PIPESTATUS[0]}"
+          fi
 
           if [ "$exit_code" -ne 0 ] && grep -qi "No Actions detected" pin-github-action.log; then
             echo "No external GitHub Actions found to pin; nothing to do." | tee -a pin-github-action.log
