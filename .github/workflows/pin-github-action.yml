@@ -77,6 +77,7 @@ jobs:
       - name: Run pin-github-action
         env:
           WORKFLOW_PATH: ${{ github.event.inputs.workflow }}
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           set -o pipefail
           PATTERN="${WORKFLOW_PATH:-.github/workflows/*.yml}"
