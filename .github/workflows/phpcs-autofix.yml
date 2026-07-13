@@ -133,7 +133,7 @@ jobs:
           ${{ steps.phpcs-config.outputs.phpcs }} ${{ steps.phpcs-config.outputs.standard_args }} . >> phpcs.log 2>&1
 
       - name: Read phpcs.log
-        uses: guibranco/github-file-reader-action-v2@21b0650bf4b078d2cf14fc187a1bb7f1b0b40016 # v2.3.42
+        uses: guibranco/github-file-reader-action-v2@4fb7decad45ddcc517b98e3fc99b1740b3312355 # v2.3.44
         id: log
         with:
           path: phpcs.log
