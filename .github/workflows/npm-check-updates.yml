@@ -103,7 +103,7 @@ jobs:
           fi
 
       - name: Read ncu.log
-        uses: guibranco/github-file-reader-action-v2@21b0650bf4b078d2cf14fc187a1bb7f1b0b40016 # v2.3.42
+        uses: guibranco/github-file-reader-action-v2@4a6c606a0c3c8e6786984bde316e0514ed8c442a # v2.3.51
         if: always()
         id: log
         with:
