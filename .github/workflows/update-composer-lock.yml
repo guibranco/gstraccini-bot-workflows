@@ -96,7 +96,7 @@ jobs:
           composer update --no-interaction --no-ansi --no-progress 2>&1 | tee update-composer-lock.log
 
       - name: Read update-composer-lock.log
-        uses: guibranco/github-file-reader-action-v2@c134d8c0ea1d2db9236cdfcf33fed9209253e60a # latest
+        uses: guibranco/github-file-reader-action-v2@b2f1a6ceb907515643683d5425b2c47468a1151d # latest
         id: log
         with:
           path: update-composer-lock.log
