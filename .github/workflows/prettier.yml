@@ -86,7 +86,7 @@ jobs:
           npx prettier --check . >> prettier.log
 
       - name: Read prettier.log
-        uses: guibranco/github-file-reader-action-v2@f77c777f42d915670655a2b1352f8660d09bf1df # latest
+        uses: guibranco/github-file-reader-action-v2@f473ed95906ce1071c855dfffe6036a27117dd22 # latest
         id: log
         with:
           path: prettier.log
