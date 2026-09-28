@@ -93,7 +93,7 @@ jobs:
           cargo clippy 2>&1 >> clippy.log
 
       - name: Read clippy.log
-        uses: guibranco/github-file-reader-action-v2@f77c777f42d915670655a2b1352f8660d09bf1df # v2.3.82
+        uses: guibranco/github-file-reader-action-v2@ac10a8b7abc16b65f2b311e85b6e34aedf2f5ef0 # v2.3.89
         id: log
         with:
           path: clippy.log
