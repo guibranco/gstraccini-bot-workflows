@@ -22,7 +22,7 @@ on:
         description: "The check run id"
         required: true
       workflow:
-        description: "The workflow file path or glob pattern to pin"
+        description: "The workflow file path or glob pattern to pin (action files at the repository root and under .github/actions are always included)"
         required: false
         default: ".github/workflows/*.yml"
 
@@ -80,25 +80,40 @@ jobs:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
         run: |
           set -o pipefail
-          PATTERN="${WORKFLOW_PATH:-.github/workflows/*.yml}"
-          shopt -s nullglob
-          FILES=($PATTERN)
-          shopt -u nullglob
+          WORKFLOW_PATTERN="${WORKFLOW_PATH:-.github/workflows/*.yml}"
+          # Action definitions: repository root (action repositories) and
+          # local actions at any depth under .github/actions
+          ACTION_PATTERNS="action.yml action.yaml .github/actions/**/action.yml .github/actions/**/action.yaml"
+
+          shopt -s nullglob globstar
+          CANDIDATES=($WORKFLOW_PATTERN $ACTION_PATTERNS)
+          shopt -u nullglob globstar
+
+          # Keep only existing, unique files that reference at least one action.
+          # This skips JavaScript/Docker actions, which have no steps to pin.
+          declare -A SEEN=()
+          FILES=()
+          for file in "${CANDIDATES[@]}"; do
+            [ -f "$file" ] || continue
+            [ -z "${SEEN[$file]:-}" ] || continue
+            SEEN[$file]=1
+            if grep -qE '^[[:space:]]*(-[[:space:]]*)?uses:' "$file"; then
+              FILES+=("$file")
+            fi
+          done
 
           if [ ${#FILES[@]} -eq 0 ]; then
-            echo "No workflow files matched pattern: ${PATTERN}" | tee pin-github-action.log
+            echo "No workflow or action files with actions to pin matched: ${WORKFLOW_PATTERN} ${ACTION_PATTERNS}" | tee pin-github-action.log
             exit 0
           fi
 
-          if npx --yes pin-github-action "${FILES[@]}" 2>&1 | tee pin-github-action.log; then
+          echo "Files to process:"
+          printf '  %s\n' "${FILES[@]}"
+
+          if npx --yes pin-github-action --allow-empty "${FILES[@]}" 2>&1 | tee pin-github-action.log; then
             exit_code=0
           else
             exit_code="${PIPESTATUS[0]}"
-          fi
-
-          if [ "$exit_code" -ne 0 ] && grep -qi "No Actions detected" pin-github-action.log; then
-            echo "No external GitHub Actions found to pin; nothing to do." | tee -a pin-github-action.log
-            exit 0
           fi
 
           exit "$exit_code"
