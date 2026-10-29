@@ -1,0 +1,9 @@
+---
+# zizmor configuration used by Super-Linter (GITHUB_ACTIONS_ZIZMOR).
+# Docs: https://docs.zizmor.sh/configuration/
+rules:
+  adhoc-packages:
+    ignore:
+      # prettier.yml runs `npm install prettier` inside the *target* repository
+      # that the bot is formatting; there is no lockfile of our own to install from.
+      - prettier.yml

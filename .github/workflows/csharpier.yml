@@ -52,12 +52,15 @@ jobs:
     steps:
       - name: Generate a token
         id: generate_token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
-          installation_retrieval_mode: id
-          installation_retrieval_payload: ${{ github.event.inputs.installationId }}
+          client-id: ${{ secrets.APP_ID }} # the numeric App ID is accepted as the JWT issuer
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.event.inputs.owner }}
+          repositories: ${{ github.event.inputs.repository }}
+          permission-contents: write # checkout + push
+          permission-pull-requests: write # PR comments
+          permission-checks: write # check run updates
 
       - name: Mark check run as in_progress
         uses: LouisBrunner/checks-action@937cbbcde3259005b50746dc91cde29098aac2ff # v3.1.0
@@ -74,7 +77,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           path: pivot-repo
-          token: ${{ steps.generate_token.outputs.token }}
+          persist-credentials: false
 
       - name: Checkout target repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -83,14 +86,17 @@ jobs:
           ref: ${{ github.event.inputs.branch }}
           token: ${{ steps.generate_token.outputs.token }}
           path: target-repo
+          persist-credentials: true
 
       - name: Check workflow file and action version
         id: check_workflow
+        env:
+          TARGET_WORKFLOW_FILE: ${{ github.event.inputs.target_workflow_file }}
+          REQUIRED_ACTION: ${{ github.event.inputs.required_action }}
+          MIN_VERSION: ${{ github.event.inputs.min_version }}
         run: |
           cd target-repo
-          WORKFLOW_FILE=".github/workflows/${{ github.event.inputs.target_workflow_file }}"
-          REQUIRED_ACTION="${{ github.event.inputs.required_action }}"
-          MIN_VERSION="${{ github.event.inputs.min_version }}"
+          WORKFLOW_FILE=".github/workflows/${TARGET_WORKFLOW_FILE}"
 
           echo "Checking for workflow file: $WORKFLOW_FILE"
           echo "Required action: $REQUIRED_ACTION"
@@ -135,10 +141,13 @@ jobs:
 
       - name: Copy template workflow file
         if: ${{ env.SKIP_TEMPLATE == 'false' }}
+        env:
+          TEMPLATE_FILE: ${{ github.event.inputs.template_file }}
+          TARGET_WORKFLOW_FILE: ${{ github.event.inputs.target_workflow_file }}
         run: |
           cd target-repo
-          TEMPLATE_PATH="../pivot-repo/${{ github.event.inputs.template_file }}"
-          TARGET_PATH=".github/workflows/${{ github.event.inputs.target_workflow_file }}"
+          TEMPLATE_PATH="../pivot-repo/${TEMPLATE_FILE}"
+          TARGET_PATH=".github/workflows/${TARGET_WORKFLOW_FILE}"
 
           echo "Copying template from $TEMPLATE_PATH to $TARGET_PATH"
 
@@ -280,16 +289,18 @@ jobs:
 
       - name: Commit files
         if: steps.verify-changed-files.outputs.files_changed == 'true'
+        env:
+          BRANCH: ${{ github.event.inputs.branch }}
         run: |
           cd target-repo
           git add .
-          if [ "${{ env.SKIP_TEMPLATE }}" == "false" ]; then
+          if [ "$SKIP_TEMPLATE" == "false" ]; then
             git commit -m "CSharpier format + Add workflow template"
           else
             git commit -m "CSharpier format"
           fi
           echo "sha1=$(git rev-parse HEAD)" >> $GITHUB_ENV
-          git push origin ${{ github.event.inputs.branch }}
+          git push origin "$BRANCH"
 
       - name: Mark check run as success
         if: success()
