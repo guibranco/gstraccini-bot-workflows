@@ -45,12 +45,15 @@ jobs:
     steps:
       - name: Generate a token
         id: generate_token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
-          installation_retrieval_mode: id
-          installation_retrieval_payload: ${{ github.event.inputs.installationId }}
+          client-id: ${{ secrets.APP_ID }} # the numeric App ID is accepted as the JWT issuer
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.event.inputs.owner }}
+          repositories: ${{ github.event.inputs.repository }}
+          permission-contents: write # checkout + push
+          permission-pull-requests: write # PR comments
+          permission-checks: write # check run updates
 
       - name: Mark check run as in_progress
         uses: LouisBrunner/checks-action@937cbbcde3259005b50746dc91cde29098aac2ff # v3.1.0
@@ -69,6 +72,7 @@ jobs:
           repository: "${{ github.event.inputs.owner}}/${{ github.event.inputs.repository }}"
           ref: ${{ github.event.inputs.branch }}
           token: ${{ steps.generate_token.outputs.token }}
+          persist-credentials: true
 
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -135,11 +139,13 @@ jobs:
 
       - name: Commit files
         if: steps.verify-changed-files.outputs.files_changed == 'true'
+        env:
+          BRANCH: ${{ github.event.inputs.branch }}
         run: |
           git add .
           git commit -m "Update test snapshot"
           echo "sha1=$(git rev-parse HEAD)" >> $GITHUB_ENV
-          git push origin ${{ github.event.inputs.branch }}
+          git push origin "$BRANCH"
 
       - name: Mark check run as success
         if: success()

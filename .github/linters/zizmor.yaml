@@ -1,0 +1,12 @@
+---
+# zizmor configuration used by Super-Linter (GITHUB_ACTIONS_ZIZMOR).
+# Docs: https://docs.zizmor.sh/configuration/
+rules:
+  adhoc-packages:
+    ignore:
+      # These workflows install a CLI tool (or Prettier) while operating on the
+      # *target* repository the bot was dispatched for, so there is no lockfile
+      # of our own to install from. (`npx` is not an option either: SonarCloud
+      # rule S6505 flags on-demand installs.)
+      - npm-check-updates.yml
+      - prettier.yml
