@@ -4,6 +4,9 @@
 rules:
   adhoc-packages:
     ignore:
-      # prettier.yml runs `npm install prettier` inside the *target* repository
-      # that the bot is formatting; there is no lockfile of our own to install from.
+      # These workflows install a CLI tool (or Prettier) while operating on the
+      # *target* repository the bot was dispatched for, so there is no lockfile
+      # of our own to install from. (`npx` is not an option either: SonarCloud
+      # rule S6505 flags on-demand installs.)
+      - npm-check-updates.yml
       - prettier.yml

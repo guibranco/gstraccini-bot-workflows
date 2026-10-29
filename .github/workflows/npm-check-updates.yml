@@ -76,10 +76,13 @@ jobs:
           node-version: 22.x
           cache: npm
 
+      - name: Install npm-check-updates
+        run: npm install -g npm-check-updates
+
       - name: Run NCU -u
         if: ${{ github.event.inputs.filter == -1 }}
         run: |
-          if ! npx --yes npm-check-updates -u >> ncu.log 2>&1; then
+          if ! ncu -u >> ncu.log 2>&1; then
             echo "::error::Failed to run ncu -u"
             exit 1
           fi
@@ -89,7 +92,7 @@ jobs:
         env:
           FILTER: ${{ github.event.inputs.filter }}
         run: |
-          if ! npx --yes npm-check-updates -u -f "$FILTER" >> ncu.log 2>&1; then
+          if ! ncu -u -f "$FILTER" >> ncu.log 2>&1; then
             echo "::error::Failed to run ncu -u -f \"${FILTER}\""
             exit 1
           fi

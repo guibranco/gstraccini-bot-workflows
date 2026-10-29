@@ -109,7 +109,8 @@ jobs:
             
             # Extract version numbers for comparison
             extract_version() {
-              echo "$1" | sed 's/^v//' | sed 's/\..*//'
+              local version="$1"
+              echo "$version" | sed 's/^v//' | sed 's/\..*//'
             }
             
             # Check if the required action exists and get its version
@@ -158,7 +159,7 @@ jobs:
             cp "$TEMPLATE_PATH" "$TARGET_PATH"
             echo "Template file copied successfully"
           else
-            echo "Error: Template file $TEMPLATE_PATH not found in pivot repository"
+            echo "Error: Template file $TEMPLATE_PATH not found in pivot repository" >&2
             exit 1
           fi
 
@@ -173,10 +174,8 @@ jobs:
         run: |
           cd target-repo
           echo "CSharpierInstalled=false" >> $GITHUB_ENV
-          if test -f ".config/dotnet-tools.json"; then
-            if jq -e '.tools | has("csharpier")' .config/dotnet-tools.json > /dev/null; then
-              echo "CSharpierInstalled=true" >> $GITHUB_ENV
-            fi
+          if test -f ".config/dotnet-tools.json" && jq -e '.tools | has("csharpier")' .config/dotnet-tools.json > /dev/null; then
+            echo "CSharpierInstalled=true" >> $GITHUB_ENV
           fi
 
       - name: Install CSharpier if missing
