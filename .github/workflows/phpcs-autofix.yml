@@ -44,12 +44,15 @@ jobs:
     steps:
       - name: Generate a token
         id: generate_token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
-          app_id: ${{ secrets.APP_ID }}
-          private_key: ${{ secrets.APP_PRIVATE_KEY }}
-          installation_retrieval_mode: id
-          installation_retrieval_payload: ${{ github.event.inputs.installationId }}
+          client-id: ${{ secrets.APP_ID }} # the numeric App ID is accepted as the JWT issuer
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.event.inputs.owner }}
+          repositories: ${{ github.event.inputs.repository }}
+          permission-contents: write # checkout + push
+          permission-pull-requests: write # PR comments
+          permission-checks: write # check run updates
 
       - name: Mark check run as in_progress
         uses: LouisBrunner/checks-action@937cbbcde3259005b50746dc91cde29098aac2ff # v3.1.0
@@ -68,6 +71,7 @@ jobs:
           repository: "${{ github.event.inputs.owner }}/${{ github.event.inputs.repository }}"
           ref: ${{ github.event.inputs.branch }}
           token: ${{ steps.generate_token.outputs.token }}
+          persist-credentials: true
 
       - name: Read PHP version from composer.json
         id: php-version
@@ -83,7 +87,7 @@ jobs:
           echo "extensions=${EXTS}" >> $GITHUB_OUTPUT
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         with:
           php-version: ${{ steps.php-version.outputs.version }}
           extensions: ${{ steps.php-extensions.outputs.extensions }}
@@ -111,8 +115,11 @@ jobs:
 
       - name: Resolve PHPCS binaries and standard args
         id: phpcs-config
+        env:
+          PHPCS_IN_COMPOSER: ${{ steps.check-phpcs.outputs.phpcs_in_composer }}
+          STANDARD: ${{ github.event.inputs.standard }}
         run: |
-          if [ "${{ steps.check-phpcs.outputs.phpcs_in_composer }}" == "true" ]; then
+          if [ "$PHPCS_IN_COMPOSER" == "true" ]; then
             echo "phpcs=./vendor/bin/phpcs" >> $GITHUB_OUTPUT
             echo "phpcbf=./vendor/bin/phpcbf" >> $GITHUB_OUTPUT
           else
@@ -123,14 +130,18 @@ jobs:
           if [ -f "phpcs.xml" ] || [ -f "phpcs.xml.dist" ] || [ -f ".phpcs.xml" ] || [ -f ".phpcs.xml.dist" ]; then
             echo "standard_args=" >> $GITHUB_OUTPUT
           else
-            echo "standard_args=--standard=${{ github.event.inputs.standard }}" >> $GITHUB_OUTPUT
+            echo "standard_args=--standard=${STANDARD}" >> $GITHUB_OUTPUT
           fi
 
       - name: Run PHPCS check
         continue-on-error: true
+        env:
+          PHPCS_BIN: ${{ steps.phpcs-config.outputs.phpcs }}
+          STANDARD_ARGS: ${{ steps.phpcs-config.outputs.standard_args }}
         run: |
           set -e
-          ${{ steps.phpcs-config.outputs.phpcs }} ${{ steps.phpcs-config.outputs.standard_args }} . >> phpcs.log 2>&1
+          # STANDARD_ARGS is either empty (config file present) or a single --standard=... flag
+          "$PHPCS_BIN" ${STANDARD_ARGS:+"$STANDARD_ARGS"} . >> phpcs.log 2>&1
 
       - name: Read phpcs.log
         uses: guibranco/github-file-reader-action-v2@e20f1ce4044b9c0432cac170153f43ade4452ac4 # v2.3.97
@@ -172,8 +183,12 @@ jobs:
             :warning: [PHPCS](${{ env.GHA_URL }}) executed! There's no need for any changes.
 
       - name: Run PHPCBF autofix
+        env:
+          PHPCBF_BIN: ${{ steps.phpcs-config.outputs.phpcbf }}
+          STANDARD_ARGS: ${{ steps.phpcs-config.outputs.standard_args }}
         run: |
-          ${{ steps.phpcs-config.outputs.phpcbf }} ${{ steps.phpcs-config.outputs.standard_args }} . || true
+          # STANDARD_ARGS is either empty (config file present) or a single --standard=... flag
+          "$PHPCBF_BIN" ${STANDARD_ARGS:+"$STANDARD_ARGS"} . || true
 
       - name: Verify Changed files
         uses: tj-actions/verify-changed-files@a1c6acee9df209257a246f2cc6ae8cb6581c1edf # v20
@@ -188,11 +203,13 @@ jobs:
 
       - name: Commit files
         if: steps.verify-changed-files.outputs.files_changed == 'true'
+        env:
+          BRANCH: ${{ github.event.inputs.branch }}
         run: |
           git add .
           git commit -m "PHPCS autofix"
           echo "sha1=$(git rev-parse HEAD)" >> $GITHUB_ENV
-          git push origin ${{ github.event.inputs.branch }}
+          git push origin "$BRANCH"
 
       - name: Mark check run as success
         if: success()
