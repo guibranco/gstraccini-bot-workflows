@@ -89,7 +89,7 @@ jobs:
           npm test -- -u >> update-snapshot.log
 
       - name: Read update-snapshot.log
-        uses: guibranco/github-file-reader-action-v2@fd96921228826283e7f256f00f4ea4eb9b1f8adb # v2.3.104
+        uses: guibranco/github-file-reader-action-v2@22611c0f716e2174006e6e5168307349281a31c7 # v2.3.107
         id: log
         with:
           path: update-snapshot.log
