@@ -124,7 +124,7 @@ jobs:
           exit "$exit_code"
 
       - name: Read pin-github-action.log
-        uses: guibranco/github-file-reader-action-v2@22611c0f716e2174006e6e5168307349281a31c7 # v2.3.107
+        uses: guibranco/github-file-reader-action-v2@1ced27fa9f9b41350b2ae64bacd6bcf62d300ce6 # v2.3.112
         id: log
         with:
           path: pin-github-action.log
