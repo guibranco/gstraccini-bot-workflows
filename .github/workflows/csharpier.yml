@@ -170,31 +170,54 @@ jobs:
             8.0.401
             9.0.300
 
-      - name: Check if CSharpier is installed
+      # The .NET SDK accepts a local tool manifest either at .config/dotnet-tools.json
+      # or at dotnet-tools.json in the repository root. Since .NET 10, `dotnet tool install`
+      # auto-creates the manifest in the repository root, so both layouts must be supported.
+      - name: Locate tool manifest and check CSharpier
         run: |
           cd target-repo
-          echo "CSharpierInstalled=false" >> $GITHUB_ENV
-          if test -f ".config/dotnet-tools.json" && jq -e '.tools | has("csharpier")' .config/dotnet-tools.json > /dev/null; then
-            echo "CSharpierInstalled=true" >> $GITHUB_ENV
+          MANIFEST=""
+          for candidate in ".config/dotnet-tools.json" "dotnet-tools.json"; do
+            if [ -f "$candidate" ]; then
+              MANIFEST="$candidate"
+              break
+            fi
+          done
+
+          if [ -f ".config/dotnet-tools.json" ] && [ -f "dotnet-tools.json" ]; then
+            echo "::warning::Both .config/dotnet-tools.json and dotnet-tools.json exist; using $MANIFEST"
           fi
+
+          INSTALLED="false"
+          if [ -n "$MANIFEST" ] && jq -e '.tools | has("csharpier")' "$MANIFEST" > /dev/null; then
+            INSTALLED="true"
+          fi
+
+          echo "Tool manifest: ${MANIFEST:-<none>}"
+          echo "CSharpier installed: $INSTALLED"
+          echo "ToolManifest=$MANIFEST" >> "$GITHUB_ENV"
+          echo "CSharpierInstalled=$INSTALLED" >> "$GITHUB_ENV"
 
       - name: Install CSharpier if missing
         if: ${{ env.CSharpierInstalled == 'false' }}
         run: |
           cd target-repo
-          if ! test -f ".config/dotnet-tools.json"; then
+          MANIFEST="$ToolManifest"
+          if [ -z "$MANIFEST" ]; then
             dotnet new tool-manifest
+            MANIFEST=".config/dotnet-tools.json"
+            echo "ToolManifest=$MANIFEST" >> "$GITHUB_ENV"
           fi
-          dotnet tool install csharpier
+          dotnet tool install csharpier --tool-manifest "$MANIFEST"
 
       - name: Fix legacy dotnet-csharpier reference
         if: ${{ env.CSharpierInstalled == 'true' }}
         run: |
           cd target-repo
-          echo "Checking for legacy 'dotnet-csharpier' command..."
-          if grep -q '"dotnet-csharpier"' .config/dotnet-tools.json; then
+          echo "Checking for legacy 'dotnet-csharpier' command in $ToolManifest..."
+          if grep -q '"dotnet-csharpier"' "$ToolManifest"; then
             echo "Found legacy command. Replacing with 'csharpier'..."
-            sed -i 's/"dotnet-csharpier"/"csharpier"/g' .config/dotnet-tools.json
+            sed -i 's/"dotnet-csharpier"/"csharpier"/g' "$ToolManifest"
           else
             echo "No legacy command found."
           fi
@@ -203,8 +226,8 @@ jobs:
         if: ${{ env.CSharpierInstalled == 'true' }}
         run: |
           cd target-repo
-          dotnet tool restore
-          dotnet tool update csharpier
+          dotnet tool restore --tool-manifest "$ToolManifest"
+          dotnet tool update csharpier --tool-manifest "$ToolManifest"
 
       - name: CSharpier format check
         continue-on-error: true
