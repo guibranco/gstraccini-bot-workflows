@@ -61,6 +61,7 @@ jobs:
           permission-contents: write # checkout + push
           permission-pull-requests: write # PR comments
           permission-checks: write # check run updates
+          permission-workflows: write # push the workflow template when it is added or updated
 
       - name: Mark check run as in_progress
         uses: LouisBrunner/checks-action@937cbbcde3259005b50746dc91cde29098aac2ff # v3.1.0
@@ -107,24 +108,30 @@ jobs:
           if [ -f "$WORKFLOW_FILE" ]; then
             echo "Workflow file exists, checking action version..."
             
-            # Extract version numbers for comparison
-            extract_version() {
-              local version="$1"
-              echo "$version" | sed 's/^v//' | sed 's/\..*//'
-            }
-            
             # Check if the required action exists and get its version
             ACTION_LINE=$(grep -E "uses:.*$REQUIRED_ACTION@" "$WORKFLOW_FILE" | head -1 || echo "")
-            
+
             if [ -n "$ACTION_LINE" ]; then
-              CURRENT_VERSION=$(echo "$ACTION_LINE" | sed -n "s|.*$REQUIRED_ACTION@\([^[:space:]]]*\).*|\1|p")
-              echo "Found action version: $CURRENT_VERSION"
-              
-              # Simple version comparison (assumes semantic versioning)
-              CURRENT_NUM=$(extract_version "$CURRENT_VERSION")
-              MIN_NUM=$(extract_version "$MIN_VERSION")
-              
-              if [ "$CURRENT_NUM" -ge "$MIN_NUM" ]; then
+              CURRENT_REF=$(echo "$ACTION_LINE" | sed -n "s|.*$REQUIRED_ACTION@\([^[:space:]#]*\).*|\1|p")
+              CURRENT_VERSION="$CURRENT_REF"
+              # SHA-pinned refs carry the version in a trailing comment: @<sha> # v1.2.3
+              if echo "$CURRENT_REF" | grep -qE '^[0-9a-f]{40}$'; then
+                CURRENT_VERSION=$(echo "$ACTION_LINE" | sed -n 's|.*#[[:space:]]*\(v\{0,1\}[0-9][^[:space:]]*\).*|\1|p')
+              fi
+              echo "Found action ref: $CURRENT_REF (version: ${CURRENT_VERSION:-<unknown>})"
+
+              CURRENT_SEMVER="${CURRENT_VERSION#v}"
+              MIN_SEMVER="${MIN_VERSION#v}"
+
+              if ! echo "$CURRENT_SEMVER" | grep -qE '^[0-9]+(\.[0-9]+)*$'; then
+                # Floating refs such as @latest or @main always track the newest release
+                echo "Action ref $CURRENT_REF is not a version number; treating it as up to date"
+                SKIP_TEMPLATE="true"
+              elif echo "$CURRENT_SEMVER" | grep -qE '^[0-9]+$' && [ "$CURRENT_SEMVER" -ge "${MIN_SEMVER%%.*}" ]; then
+                # Floating major tags such as @v1 track the newest release of that major
+                echo "Action ref $CURRENT_REF is a floating major tag satisfying $MIN_VERSION"
+                SKIP_TEMPLATE="true"
+              elif [ "$(printf '%s\n%s\n' "$MIN_SEMVER" "$CURRENT_SEMVER" | sort -V | head -1)" = "$MIN_SEMVER" ]; then
                 echo "Action version $CURRENT_VERSION meets minimum requirement $MIN_VERSION"
                 SKIP_TEMPLATE="true"
               else
