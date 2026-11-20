@@ -163,12 +163,30 @@ jobs:
             exit 1
           fi
 
+      # CSharpier >= 1.4.0 only ships net10.0/net11.0 tool builds. Older repositories often
+      # pin an older SDK through global.json (e.g. 8.0.x with rollForward: latestFeature),
+      # which makes `dotnet tool restore` fail with "DotnetToolSettings.xml was not found".
+      # CSharpier does not need the repository's SDK, so the pin is moved aside while the
+      # tool runs and restored before the changed-files check, so it is never committed.
+      - name: Move global.json aside
+        run: |
+          cd target-repo
+          if [ -f global.json ]; then
+            echo "Found global.json pinning SDK $(jq -r '.sdk.version // "<none>"' global.json); moving it aside."
+            mv global.json "$RUNNER_TEMP/target-global.json"
+            echo "GlobalJsonMoved=true" >> "$GITHUB_ENV"
+          else
+            echo "No global.json found."
+            echo "GlobalJsonMoved=false" >> "$GITHUB_ENV"
+          fi
+
       - name: Setup .NET
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
           dotnet-version: |
-            8.0.401
-            9.0.300
+            8.0.x
+            9.0.x
+            10.0.x
 
       # The .NET SDK accepts a local tool manifest either at .config/dotnet-tools.json
       # or at dotnet-tools.json in the repository root. Since .NET 10, `dotnet tool install`
@@ -294,6 +312,10 @@ jobs:
         run: |
           cd target-repo
           dotnet csharpier format .
+
+      - name: Restore global.json
+        if: ${{ always() && env.GlobalJsonMoved == 'true' }}
+        run: mv "$RUNNER_TEMP/target-global.json" target-repo/global.json
 
       - name: Verify Changed files
         uses: tj-actions/verify-changed-files@a1c6acee9df209257a246f2cc6ae8cb6581c1edf # v20
