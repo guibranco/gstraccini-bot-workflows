@@ -144,7 +144,7 @@ jobs:
           "$PHPCS_BIN" ${STANDARD_ARGS:+"$STANDARD_ARGS"} . >> phpcs.log 2>&1
 
       - name: Read phpcs.log
-        uses: guibranco/github-file-reader-action-v2@5b14202098c9f7a694d93ef7b4efc4e6f2d9c81f # v2.3.115
+        uses: guibranco/github-file-reader-action-v2@8ac686317423e7fa58425009085581e0b896f449 # v2.3.118
         id: log
         with:
           path: phpcs.log
